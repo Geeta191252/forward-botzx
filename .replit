@@ -1,0 +1,35 @@
+modules = ["python-3.11"]
+[agent]
+expertMode = true
+integrations = ["python_database==1.0.0", "flask_stripe==1.0.0"]
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Premium Bot"
+
+[[workflows.workflow]]
+name = "Premium Bot"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python bot.py"
+
+[workflows.workflow.metadata]
+outputType = "console"
+
+[nix]
+channel = "stable-25_05"
+packages = ["cargo", "libiconv", "openssl", "rustc"]
+
+[[ports]]
+localPort = 5000
+externalPort = 80
