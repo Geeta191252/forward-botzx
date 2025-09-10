@@ -886,39 +886,20 @@ async def send(bot, user, text):
 
 def custom_caption(message, caption):
     if message.caption:
-       try:
-          # Handle potential encoding issues - fix UTF-16-LE issue
-          if isinstance(message.caption, bytes):
-             try:
-                old_caption = message.caption.decode('utf-8', errors='ignore')
-             except:
-                old_caption = message.caption.decode('utf-8', errors='replace')
-          else:
-             old_caption = str(message.caption).encode('utf-8', errors='ignore').decode('utf-8')
-          old_caption = html.escape(old_caption)
-       except Exception as enc_error:
-          print(f"Encoding error in original caption: {enc_error}")
-          old_caption = "Caption encoding error"
+       # Use the robust encoding handler for original caption
+       old_caption = safe_decode_caption(message.caption)
+       old_caption = html.escape(old_caption) if old_caption else ""
 
        if caption:
-          try:
-             if isinstance(caption, bytes):
-                caption = caption.decode('utf-8', errors='ignore')
-             new_caption = str(caption).replace('{caption}', old_caption)
-          except Exception as enc_error:
-             print(f"Encoding error in custom caption: {enc_error}")
-             new_caption = old_caption
+          # Use safe decoding for custom caption as well
+          caption = safe_decode_caption(caption)
+          new_caption = caption.replace('{caption}', old_caption) if caption else old_caption
        else:
           new_caption = old_caption 
     else:
        if caption:
-          try:
-             if isinstance(caption, bytes):
-                caption = caption.decode('utf-8', errors='ignore')
-             new_caption = str(caption).encode('utf-8', errors='ignore').decode('utf-8')
-          except Exception as enc_error:
-             print(f"Encoding error in new caption: {enc_error}")
-             new_caption = ""
+          # Use safe decoding for custom caption when there's no original caption
+          new_caption = safe_decode_caption(caption)
        else:
           new_caption = ""
     return new_caption
