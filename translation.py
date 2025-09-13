@@ -188,7 +188,7 @@ class Translation(object):
 <b>Removed by:</b> {admin_name}
 
 <b>You are now on the free plan with monthly limits.</b>
-<b>💎 To get premium again, use /premium to see available plans</b>"""
+<b>💎 To get premium again, use /plan to see available plans</b>"""
 
   PLAN_INFO_MSG = """<b>💎 Premium Plans</b>
 
