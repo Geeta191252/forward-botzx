@@ -515,29 +515,33 @@ async def settings_query(bot, query):
      user_can_use_ftm = await db.can_use_ftm_mode(user_id)
      user_can_use_alpha = await db.can_use_ftm_alpha_mode(user_id)
      
-     if not user_can_use_ftm:
-         buttons = [[
-            InlineKeyboardButton('💎 Upgrade to Pro Plan',
-                        callback_data='premium#main')
-            ],[
-            InlineKeyboardButton('↩ Back',
-                        callback_data="settings#main")
-            ]]
-         await query.message.edit_text(
-            f"<b><u>🔥 FTM MODE 🔥</u></b>\n\n<b>⚠️ Pro Plan Required</b>\n\nFTM Mode is a premium feature available only to Pro plan users.\n\n<b>Pro Plan Benefits:</b>\n• FTM Mode with source tracking\n• Unlimited forwarding\n• Priority support\n\n<b>Pricing:</b>\n• 15 days: ₹299\n• 30 days: ₹549",
-            reply_markup=InlineKeyboardMarkup(buttons))
+     buttons = []
+     
+     if user_can_use_ftm:
+         buttons.append([InlineKeyboardButton('🔥 FTM Delta Mode', callback_data='settings#ftm_delta')])
      else:
-         buttons = [[
-            InlineKeyboardButton('✅ Enable' if not ftm_mode else '❌ Disable',
-                        callback_data=f'settings#toggle_ftmmode')
-            ],[
-            InlineKeyboardButton('↩ Back',
-                        callback_data="settings#main")
-            ]]
-         status = "🟢 Enabled" if ftm_mode else "🔴 Disabled"
-         await query.message.edit_text(
-            f"<b><u>🔥 FTM MODE 🔥</u></b>\n\n<b>Status:</b> {status}\n\n<b>When FTM Mode is enabled:</b>\n• Each forwarded message will have a 'Source Link' button\n• Original message link will be added to caption\n• Target message link will be embedded in caption\n\n<b>Note:</b> This mode adds source tracking to all forwarded messages.",
-            reply_markup=InlineKeyboardMarkup(buttons))
+         buttons.append([InlineKeyboardButton('🔥 FTM Delta Mode (Pro Only)', callback_data='settings#ftm_delta')])
+         
+     if user_can_use_alpha:
+         buttons.append([InlineKeyboardButton('⚡ FTM Alpha Mode', callback_data='settings#ftm_alpha')])
+     else:
+         buttons.append([InlineKeyboardButton('⚡ FTM Alpha Mode (Pro Only)', callback_data='settings#ftm_alpha')])
+     
+     buttons.append([InlineKeyboardButton('↩ Back', callback_data="settings#main")])
+     
+     await query.message.edit_text(
+        f"<b><u>🚀 FTM MODES 🚀</u></b>\n\n"
+        f"<b>🔥 FTM Delta Mode:</b>\n"
+        f"• Adds source tracking to forwarded messages\n"
+        f"• Creates 'Source Link' buttons\n"
+        f"• Embeds original message links\n\n"
+        f"<b>⚡ FTM Alpha Mode:</b> 🔜\n"
+        f"• Real-time auto-forwarding between channels\n"
+        f"• Live sync of all new incoming posts\n"
+        f"• No 'Forwarded from' tags (bot-uploaded)\n"
+        f"• Requires bot admin in both channels\n\n"
+        f"<b>⚠️ Fun Fact:</b> We're launching a special Ultra plan for Alpha mode soon! 😉",
+        reply_markup=InlineKeyboardMarkup(buttons))
   
   elif type=="toggle_ftmmode":
      user_can_use_ftm = await db.can_use_ftm_mode(user_id)

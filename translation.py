@@ -29,7 +29,8 @@ class Translation(object):
 ► __skip duplicate messages__
 ► __filter type of messages__
 ► __skip messages based on extensions & keywords & size__
-► __FTM mode with source link tracking__
+► __FTM Delta Mode with source link tracking__
+► __FTM Alpha Mode for real-time auto-forwarding (Pro only)__
 ► __Real-time network speed testing__
 ► __Detailed system monitoring__</b>
 """
