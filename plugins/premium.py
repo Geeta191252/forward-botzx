@@ -858,7 +858,7 @@ async def plan_command(client, message):
     plan_text = f"""<b>💎 Premium Plans</b>
 
 <b>🆓 Free Plan</b>
-• 5 forwarding processes per day
+• 1 forwarding process per month
 • Basic support
 • Standard features
 
@@ -925,7 +925,7 @@ async def myplan_command(client, message):
         else:
             # Free user
             processes_used = usage.get('processes', 0)
-            processes_limit = 5  # Free users get 5 processes per day
+            processes_limit = 1  # Free users get 1 process per month
             
             status_text = f"<b>🆓 Your Free Plan</b>\n\n"
             status_text += f"<b>Plan:</b> Free\n"

@@ -318,17 +318,33 @@ class Database:
         })
         return usage if usage else {'user_id': int(user_id), 'date': start_of_month, 'processes': 0, 'trial_processes': 0}
 
-    async def add_trial_processes(self, user_id, trial_count=2):
+    async def add_trial_processes(self, user_id, additional_processes=1):
         """Add trial processes to user's monthly limit"""
         start_of_month = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        
+        # Check if trial already activated this month
+        existing = await self.usage_col.find_one({
+            'user_id': int(user_id), 
+            'date': start_of_month,
+            'trial_activated': True
+        })
+        
+        if existing:
+            return False  # Trial already claimed this month
+            
         await self.usage_col.update_one(
             {'user_id': int(user_id), 'date': start_of_month},
             {
-                '$set': {'trial_processes': trial_count, 'trial_activated': True, 'trial_date': datetime.utcnow()},
+                '$set': {
+                    'trial_processes': additional_processes, 
+                    'trial_activated': True, 
+                    'trial_granted_at': datetime.utcnow()
+                },
                 '$setOnInsert': {'processes': 0}
             },
             upsert=True
         )
+        return True  # Trial successfully granted
 
     async def get_user_process_limit(self, user_id):
         """Get user's total process limit including trials"""
