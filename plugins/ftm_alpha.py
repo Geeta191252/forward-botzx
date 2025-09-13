@@ -120,12 +120,13 @@ async def ftm_alpha_handler(client, message):
         print(f"❌ FTM Alpha handler error: {e}")
 
 # Background task to periodically reload configurations
-async def alpha_config_reloader():
+async def alpha_config_reloader(bot):
     """Periodically reload Alpha mode configurations"""
     while True:
         try:
             await asyncio.sleep(300)  # Reload every 5 minutes
             await load_alpha_configs()
+            await validate_and_filter_configs(bot)  # Also validate permissions
         except Exception as e:
             print(f"❌ Alpha config reloader error: {e}")
 
@@ -137,7 +138,7 @@ async def initialize_alpha_mode(bot):
     await validate_and_filter_configs(bot)
     
     # Start background config reloader
-    asyncio.create_task(alpha_config_reloader())
+    asyncio.create_task(alpha_config_reloader(bot))
     print("✅ FTM Alpha Mode initialized successfully!")
 
 # Export the initialization function
