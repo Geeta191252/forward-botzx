@@ -663,25 +663,37 @@ async def add_premium_command(client, message):
     if not Config.is_sudo_user(user_id):
         return await message.reply_text("❌ You don't have permission to use this command!")
     
-    if len(message.command) < 2:
+    if len(message.command) < 3:
         return await message.reply_text(
             "<b>❌ Invalid Usage!</b>\n\n"
-            "<b>Usage:</b> <code>/add_premium [user_id] [days]</code>\n"
-            "<b>Example:</b> <code>/add_premium 123456789 30</code>\n\n"
-            "<b>This will add premium access for specified days.</b>\n"
+            "<b>Usage:</b> <code>/add_premium [user_id] [plan_type] [days]</code>\n"
+            "<b>Example:</b> <code>/add_premium 123456789 pro 30</code>\n\n"
+            "<b>Plan Types:</b>\n"
+            "• <b>plus</b> - Unlimited forwarding only\n"
+            "• <b>pro</b> - Unlimited forwarding + FTM mode + Priority support\n\n"
             "<b>Default: 30 days if days not specified.</b>"
         )
     
     try:
         target_user_id = int(message.command[1])
-        days = int(message.command[2]) if len(message.command) > 2 else 30
+        plan_type = message.command[2].lower()
+        days = int(message.command[3]) if len(message.command) > 3 else 30
+        
+        # Validate plan type
+        if plan_type not in ['plus', 'pro']:
+            return await message.reply_text(
+                "❌ Invalid plan type! Please use 'plus' or 'pro'.\n\n"
+                "<b>Plan Types:</b>\n"
+                "• <b>plus</b> - Unlimited forwarding only\n"
+                "• <b>pro</b> - Unlimited forwarding + FTM mode + Priority support"
+            )
         
         if days <= 0:
             return await message.reply_text("❌ Days must be greater than 0!")
         
         # Add premium subscription
         expires_at = datetime.utcnow() + timedelta(days=days)
-        await db.add_premium_user(target_user_id, "admin_granted", days)
+        await db.add_premium_user(target_user_id, plan_type, days)
         
         # Send admin action notification
         from utils.notifications import NotificationManager
@@ -690,7 +702,7 @@ async def add_premium_command(client, message):
             user_id, 
             "Added Premium User", 
             target_user_id, 
-            f"Plan: admin_granted, Duration: {days} days"
+            f"Plan: {plan_type.upper()}, Duration: {days} days"
         )
         
         # Get user info
@@ -704,21 +716,26 @@ async def add_premium_command(client, message):
             f"<b>✅ Premium Added Successfully!</b>\n\n"
             f"<b>User:</b> {user_info}\n"
             f"<b>User ID:</b> <code>{target_user_id}</code>\n"
+            f"<b>Plan Type:</b> {plan_type.upper()}\n"
             f"<b>Duration:</b> {days} days\n"
             f"<b>Expires:</b> {expires_at.strftime('%Y-%m-%d %H:%M:%S')} UTC"
         )
         
         # Notify the user
         try:
+            # Get plan-specific features
+            if plan_type == 'plus':
+                features_text = "• Unlimited forwarding processes\n"
+            else:  # pro plan
+                features_text = "• Unlimited forwarding processes\n• FTM mode enabled\n• Priority support\n"
+            
             await client.send_message(
                 target_user_id,
                 f"<b>🎉 Premium Access Granted!</b>\n\n"
-                f"<b>✅ You have been granted Premium access for {days} days!</b>\n"
+                f"<b>✅ You have been granted {plan_type.upper()} plan for {days} days!</b>\n"
                 f"<b>💎 Granted by: {message.from_user.first_name}</b>\n\n"
-                f"<b>Premium Benefits:</b>\n"
-                "• Unlimited forwarding processes\n"
-                "• Priority support\n"
-                "• All premium features unlocked\n\n"
+                f"<b>{plan_type.upper()} Plan Benefits:</b>\n"
+                f"{features_text}\n"
                 f"<b>Expires:</b> {expires_at.strftime('%Y-%m-%d %H:%M:%S')} UTC\n"
                 "<b>Use /myplan to check your subscription details.</b>"
             )
