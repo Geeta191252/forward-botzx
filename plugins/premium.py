@@ -681,7 +681,7 @@ async def add_premium_command(client, message):
         
         # Add premium subscription
         expires_at = datetime.utcnow() + timedelta(days=days)
-        await db.add_premium_user(target_user_id, "admin_granted", expires_at)
+        await db.add_premium_user(target_user_id, "admin_granted", days)
         
         # Send admin action notification
         from utils.notifications import NotificationManager
