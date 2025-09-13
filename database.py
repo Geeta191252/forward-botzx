@@ -109,7 +109,10 @@ class Database:
             'size_limit': None,
             'extension': None,
             'keywords': None,
-            'ftm_mode': False,
+            'ftm_mode': False,  # Now called FTM Delta mode
+            'ftm_alpha_mode': False,  # New FTM Alpha mode for real-time forwarding
+            'alpha_source_chat': None,  # Source channel for Alpha mode
+            'alpha_target_chat': None,  # Target channel for Alpha mode
             'protect': None,
             'filters': {
                 'text': True,
@@ -277,9 +280,14 @@ class Database:
         return self._get_plan_features('free')
     
     async def can_use_ftm_mode(self, user_id):
-        """Check if user can use FTM mode (Pro plan only)"""
+        """Check if user can use FTM Delta mode (Pro plan only)"""
         features = await self.get_user_plan_features(user_id)
         return features.get('ftm_mode', False)
+
+    async def can_use_ftm_alpha_mode(self, user_id):
+        """Check if user can use FTM Alpha mode (Pro plan only)"""
+        features = await self.get_user_plan_features(user_id)
+        return features.get('ftm_alpha_mode', False)
     
     async def get_forwarding_limit(self, user_id):
         """Get user's daily forwarding limit"""
@@ -360,6 +368,58 @@ class Database:
             'trial_processes': monthly_usage.get('trial_processes', 0),
             'granted_at': monthly_usage.get('trial_granted_at')
         }
+
+    async def get_alpha_config(self, user_id):
+        """Get FTM Alpha mode configuration for user"""
+        configs = await self.get_configs(user_id)
+        return {
+            'enabled': configs.get('ftm_alpha_mode', False),
+            'source_chat': configs.get('alpha_source_chat'),
+            'target_chat': configs.get('alpha_target_chat')
+        }
+
+    async def set_alpha_config(self, user_id, source_chat=None, target_chat=None, enabled=None):
+        """Set FTM Alpha mode configuration"""
+        current_config = await self.get_configs(user_id)
+        
+        if source_chat is not None:
+            current_config['alpha_source_chat'] = source_chat
+        if target_chat is not None:
+            current_config['alpha_target_chat'] = target_chat
+        if enabled is not None:
+            current_config['ftm_alpha_mode'] = enabled
+            
+        await self.update_configs(user_id, current_config)
+        return True
+
+    async def validate_alpha_permissions(self, user_id, bot_client, source_chat, target_chat):
+        """Validate if bot is admin in both source and target chats for Alpha mode"""
+        try:
+            # Check source chat permissions
+            source_member = await bot_client.get_chat_member(source_chat, bot_client.me.id)
+            if source_member.status not in ['administrator', 'creator']:
+                return False, "Bot is not admin in source channel"
+            
+            # Check target chat permissions
+            target_member = await bot_client.get_chat_member(target_chat, bot_client.me.id)
+            if target_member.status not in ['administrator', 'creator']:
+                return False, "Bot is not admin in target channel"
+                
+            return True, "Bot has admin permissions in both channels"
+        except Exception as e:
+            return False, f"Permission check failed: {str(e)}"
+
+    async def get_all_alpha_users(self):
+        """Get all users with active Alpha mode for real-time processing"""
+        pipeline = [
+            {'$match': {'configs.ftm_alpha_mode': True}},
+            {'$project': {
+                'user_id': '$id',
+                'source_chat': '$configs.alpha_source_chat',
+                'target_chat': '$configs.alpha_target_chat'
+            }}
+        ]
+        return await self.col.aggregate(pipeline).to_list(length=1000)
 
     async def get_user_process_limit(self, user_id):
         """Get user's total process limit including trials"""

@@ -48,7 +48,8 @@ class Config:
         },
         'pro': {
             'forwarding_limit': -1,  # unlimited
-            'ftm_mode': True,
+            'ftm_mode': True,  # FTM Delta mode
+            'ftm_alpha_mode': True,  # FTM Alpha mode - real-time auto-forwarding
             'priority_support': True,
             'unlimited_forwarding': True
         }
