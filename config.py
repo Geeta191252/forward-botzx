@@ -35,7 +35,7 @@ class Config:
     # Plan features
     PLAN_FEATURES = {
         'free': {
-            'forwarding_limit': 5,  # per day
+            'forwarding_limit': 1,  # per month
             'ftm_mode': False,
             'priority_support': False,
             'unlimited_forwarding': False

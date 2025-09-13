@@ -310,10 +310,36 @@ class Database:
         return 0
     
     async def get_monthly_usage(self, user_id):
-        """Get user's monthly usage (for compatibility)"""
-        # For now, return daily usage as monthly usage
-        daily_usage = await self.get_daily_usage(user_id)
-        return daily_usage
+        """Get user's usage for current month"""
+        start_of_month = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        usage = await self.usage_col.find_one({
+            'user_id': int(user_id),
+            'date': start_of_month
+        })
+        return usage if usage else {'user_id': int(user_id), 'date': start_of_month, 'processes': 0, 'trial_processes': 0}
+
+    async def add_trial_processes(self, user_id, trial_count=2):
+        """Add trial processes to user's monthly limit"""
+        start_of_month = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        await self.usage_col.update_one(
+            {'user_id': int(user_id), 'date': start_of_month},
+            {
+                '$set': {'trial_processes': trial_count, 'trial_activated': True, 'trial_date': datetime.utcnow()},
+                '$setOnInsert': {'processes': 0}
+            },
+            upsert=True
+        )
+
+    async def get_user_process_limit(self, user_id):
+        """Get user's total process limit including trials"""
+        base_limit = await self.get_forwarding_limit(user_id)
+        if base_limit == -1:  # Premium user
+            return -1
+        
+        # Check for trial processes
+        monthly_usage = await self.get_monthly_usage(user_id)
+        trial_processes = monthly_usage.get('trial_processes', 0)
+        return base_limit + trial_processes
 
     async def get_all_premium_users(self):
         """Get all premium users"""
@@ -407,10 +433,10 @@ class Database:
         return usage if usage else {'user_id': int(user_id), 'date': start_of_day, 'processes': 0}
 
     async def increment_usage(self, user_id):
-        """Increment user's daily usage"""
-        start_of_day = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        """Increment user's monthly usage"""
+        start_of_month = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         await self.usage_col.update_one(
-            {'user_id': int(user_id), 'date': start_of_day},
+            {'user_id': int(user_id), 'date': start_of_month},
             {
                 '$inc': {'processes': 1},
                 '$set': {'last_used': datetime.utcnow()}
@@ -419,18 +445,18 @@ class Database:
         )
 
     async def can_user_process(self, user_id):
-        """Check if user can process based on their plan"""
-        # Get user's forwarding limit
-        limit = await self.get_forwarding_limit(user_id)
+        """Check if user can process based on their plan (including trial processes)"""
+        # Get user's total forwarding limit (including trial processes)
+        limit = await self.get_user_process_limit(user_id)
         
         # Unlimited for premium plans (Plus and Pro)
         if limit == -1:
             return True, "unlimited"
         
-        # Check daily usage for free users
-        usage = await self.get_daily_usage(user_id)
+        # Check monthly usage for free users
+        usage = await self.get_monthly_usage(user_id)
         if usage['processes'] >= limit:
-            return False, "daily_limit_reached"
+            return False, "monthly_limit_reached"
         
         return True, "allowed"
     

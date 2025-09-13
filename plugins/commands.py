@@ -22,13 +22,15 @@ main_buttons = [[
         InlineKeyboardButton('📜 sᴜᴘᴘᴏʀᴛ ɢʀᴏᴜᴘ ', url=Config.SUPPORT_GROUP),
         InlineKeyboardButton('🤖 ᴜᴘᴅᴀᴛᴇ ᴄʜᴀɴɴᴇʟ  ', url=Config.UPDATE_CHANNEL)
         ],[
-        InlineKeyboardButton('📊 My Plan', callback_data='my_plan'),
-        InlineKeyboardButton('💎 Premium Plans', callback_data='premium_plans')
+        InlineKeyboardButton('🎁 Get Free Trial', callback_data='get_free_trial'),
+        InlineKeyboardButton('📊 My Plan', callback_data='my_plan')
         ],[
-        InlineKeyboardButton('🙋‍♂️ ʜᴇʟᴘ', callback_data='help'),
-        InlineKeyboardButton('💁‍♂️ ᴀʙᴏᴜᴛ ', callback_data='about')
+        InlineKeyboardButton('💎 Premium Plans', callback_data='premium_plans'),
+        InlineKeyboardButton('🙋‍♂️ ʜᴇʟᴘ', callback_data='help')
         ],[
-        InlineKeyboardButton('⚙️ sᴇᴛᴛɪɴɢs ⚙️', callback_data='settings#main'),
+        InlineKeyboardButton('💁‍♂️ ᴀʙᴏᴜᴛ ', callback_data='about'),
+        InlineKeyboardButton('⚙️ sᴇᴛᴛɪɴɢs ⚙️', callback_data='settings#main')
+        ],[
         InlineKeyboardButton('📞 Contact Admin', callback_data='contact_admin')
         ]]
 
@@ -887,8 +889,8 @@ async def get_free_trial_callback(bot, query):
             )
             return
         
-        # Grant the free trial (increment usage)
-        await db.increment_usage(user_id)
+        # Grant the free trial (add 2 extra processes for this month)
+        await db.add_trial_processes(user_id, 2)
         
         # Send notification to admins
         try:
@@ -904,18 +906,17 @@ async def get_free_trial_callback(bot, query):
         # Send confirmation message to user
         await query.message.edit_text(
             text="<b>🎉 Free Trial Activated!</b>\n\n"
-                 "<b>✅ You have received 1 free forwarding process for this month!</b>\n\n"
+                 "<b>✅ You have received 2 free forwarding processes for this month!</b>\n\n"
                  "<b>📋 What you can do:</b>\n"
                  "• Use /forward to start forwarding messages\n"
                  "• Access all basic features\n"
-                 "• Process one forwarding job\n\n"
+                 "• Process two forwarding jobs\n\n"
                  "<b>🔒 Channel Lock:</b> Your channel will be locked during processing to ensure quality.\n\n"
                  "<b>💎 Want unlimited access?</b>\n"
-                 "Upgrade to Premium for ₹200/month:\n"
-                 "• Unlimited forwarding processes\n"
-                 "• Priority support\n"
-                 "• No monthly restrictions\n\n"
-                 "<b>📊 Your current status:</b> 1/1 free processes used this month\n"
+                 "Upgrade to Premium:\n"
+                 "• <b>Plus Plan:</b> ₹199/15d, ₹299/30d - Unlimited forwarding\n"
+                 "• <b>Pro Plan:</b> ₹299/15d, ₹549/30d - Unlimited + FTM Mode + Priority support\n\n"
+                 "<b>📊 Your current status:</b> 2/2 free processes available this month\n"
                  "<b>🗓️ Resets:</b> 1st of next month",
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton('🚀 Start Forwarding', callback_data='settings#main')],
