@@ -353,11 +353,16 @@ async def admin_commands_callback(bot, query):
         
         await query.message.edit_text(
             text="<b>🔧 Admin Commands Panel</b>\n\n"
-                 "<b>Select an admin command:</b>\n\n"
-                 "• <b>Premium Management:</b> Add/remove premium users\n"
-                 "• <b>System Tools:</b> Monitor server performance\n"
-                 "• <b>User Support:</b> Direct chat with users\n"
-                 "• <b>Bot Control:</b> Restart and configuration\n\n"
+                 "<b>Premium Management Commands:</b>\n"
+                 "• <code>/add_premium [user_id] [plan_type] [days]</code>\n"
+                 "  Plan types: <b>plus</b> or <b>pro</b>\n"
+                 "  Example: <code>/add_premium 123456789 pro 30</code>\n"
+                 "• <code>/remove_premium [user_id]</code>\n\n"
+                 "<b>User Management:</b>\n"
+                 "• <code>/users</code> - List all registered users\n\n"
+                 "<b>System Tools:</b> Monitor server performance\n"
+                 "<b>User Support:</b> Direct chat with users\n"
+                 "<b>Bot Control:</b> Restart and configuration\n\n"
                  "<i>These commands are only visible to admins and owners.</i>",
             reply_markup=InlineKeyboardMarkup(admin_buttons)
         )
