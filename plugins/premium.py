@@ -795,7 +795,7 @@ async def remove_premium_command(client, message):
                 f"<b>Your premium access has been removed by an admin.</b>\n"
                 f"<b>Removed by:</b> {message.from_user.first_name}\n\n"
                 "<b>You are now on the free plan with monthly limits.</b>\n"
-                "<b>To get premium again, send ₹100 to 6354228145@axl and use /verify</b>"
+                "<b>💎 To get premium again, use /premium to see available plans</b>"
             )
         except:
             await message.reply_text("⚠️ Could not notify the user about premium removal.")

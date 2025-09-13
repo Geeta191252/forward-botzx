@@ -1137,16 +1137,23 @@ async def my_plan_callback(bot, query):
 
 <b>🎉 You have access to premium features!</b>"""
         else:
-            # User is on free plan
+            # User is on free plan - check if trial was used
+            trial_status = await db.get_trial_status(user_id)
+            total_processes = 1  # Base free process
+            trial_text = ""
+            if trial_status and trial_status.get('used', False):
+                total_processes = 2  # Base + trial
+                trial_text = " (1 base + 1 trial)"
+                
             plan_text = f"""<b>🆓 Your Free Plan</b>
 
 <b>📊 Status:</b> Free User
-<b>🔄 Monthly Usage:</b> {usage_count}/1 processes
+<b>🔄 Monthly Usage:</b> {usage_count}/{total_processes} processes
 <b>🗓️ Usage Resets:</b> 1st of each month
-<b>📈 Remaining:</b> {max(0, 1 - usage_count)} free processes
+<b>📈 Remaining:</b> {max(0, total_processes - usage_count)} free processes
 
 <b>💡 Current Features:</b>
-• 1️⃣ One free process per month
+• {total_processes}️⃣ {total_processes} free process{'es' if total_processes > 1 else ''} per month{trial_text}
 • 🔄 Basic forwarding functionality
 • 📋 Standard filtering options
 
