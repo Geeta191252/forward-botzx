@@ -47,6 +47,10 @@ class Bot(Client):
         from utils.notifications import NotificationManager
         self.notification_manager = NotificationManager(self)
         
+        # Initialize FTM Alpha mode
+        from plugins.ftm_alpha import initialize_alpha_mode
+        await initialize_alpha_mode(self)
+        
         text = "**๏[-ิ_•ิ]๏ bot restarted !**"
         logging.info(text)
         success = failed = 0
