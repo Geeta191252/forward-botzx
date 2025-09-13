@@ -53,7 +53,7 @@ class Bot(Client):
         
         # Send restart message to all users (not just forwarding users)
         all_users = await db.get_all_users()
-        async for user in all_users:
+        for user in all_users:
            chat_id = user['id']
            try:
               await self.send_message(chat_id, text)

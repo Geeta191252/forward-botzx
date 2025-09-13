@@ -28,9 +28,11 @@ class Database:
         self.chat_requests_col = self.db.chat_requests  # Chat requests collection 
 
     def new_user(self, id, name):
+        from datetime import datetime
         return dict(
             id = id,
             name = name,
+            joined_date = datetime.utcnow(),
             ban_status=dict(
                 is_banned=False,
                 ban_reason="",
@@ -79,7 +81,11 @@ class Database:
         return user.get('ban_status', default)
 
     async def get_all_users(self):
-        return self.col.find({})
+        return await self.col.find({}).to_list(length=1000)
+
+    async def get_user(self, user_id):
+        """Get user data by user ID"""
+        return await self.col.find_one({'id': int(user_id)})
 
     async def delete_user(self, user_id):
         await self.col.delete_many({'id': int(user_id)})

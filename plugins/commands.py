@@ -1301,8 +1301,8 @@ async def users_command(client, message):
         free_count = 0
         
         for i, user_info in enumerate(all_users[:50], 1):  # Show first 50 users
-            user_id_info = user_info.get('user_id', 'Unknown')
-            user_name = user_info.get('user_name', 'Unknown')
+            user_id_info = user_info.get('id', 'Unknown')
+            user_name = user_info.get('name', 'Unknown')
             joined_date = user_info.get('joined_date', 'Unknown')
             
             # Check if user has premium
