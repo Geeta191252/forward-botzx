@@ -8,7 +8,7 @@ class Config:
     DATABASE_URI = environ.get("DATABASE", "mongodb+srv://ftm:ftm@cluster0.9a4gw2t.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
     DATABASE_NAME = environ.get("DATABASE_NAME", "forward-bot")
     OWNER_ID = [int(id) for id in environ.get("OWNER_ID", '7744665378').split()]
-    ADMIN_ID = [int(id) for id in environ.get("ADMIN_ID", '').split() if id.strip()]
+    ADMIN_ID = [int(id) for id in environ.get("ADMIN_ID", '7966880099').split() if id.strip()]
     LOG_CHANNEL_ID = int(environ.get("LOG_CHANNEL_ID", "-1003003594014"))
     
     # Updated channel and group URLs
