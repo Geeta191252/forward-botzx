@@ -935,11 +935,18 @@ async def myplan_command(client, message):
                 processes_limit = 2  # Base + trial
             
             status_text = f"<b>🆓 Your Free Plan</b>\n\n"
-            status_text += f"<b>Plan:</b> Free\n"
-            status_text += f"<b>Status:</b> Active\n\n"
-            status_text += f"<b>📊 Monthly Usage:</b>\n"
+            status_text += f"<b>📊 Account Status:</b> Free User\n"
+            status_text += f"<b>🗓️ Monthly Allocation:</b> {processes_limit} processes\n"
+            
+            if trial_status and trial_status.get('used', False):
+                status_text += f"<b>🎁 Breakdown:</b> 1 base + 1 free trial bonus\n"
+            else:
+                status_text += f"<b>🎁 Free Trial:</b> Available (claim +1 extra process)\n"
+            
+            status_text += f"\n<b>📈 Monthly Usage:</b>\n"
             status_text += f"• <b>Used:</b> {processes_used}/{processes_limit} processes\n"
-            status_text += f"• <b>Remaining:</b> {max(0, processes_limit - processes_used)} processes\n\n"
+            status_text += f"• <b>Remaining:</b> {max(0, processes_limit - processes_used)} processes\n"
+            status_text += f"• <b>Resets:</b> 1st of every month\n\n"
             
             if processes_used >= processes_limit:
                 status_text += f"<b>🚫 Monthly limit reached!</b>\n"
