@@ -276,15 +276,22 @@ class Database:
             'expires_at': {'$gt': datetime.utcnow()}
         })
         if user:
-            # If user exists but features are missing/outdated, update them
-            if 'features' not in user or not user['features']:
-                plan_features = self._get_plan_features(user.get('plan_type', 'free'))
+            plan_type = user.get('plan_type', 'free')
+            current_plan_features = self._get_plan_features(plan_type)
+            stored_features = user.get('features', {})
+            
+            # Merge current plan features with stored features (current plan takes precedence for missing keys)
+            merged_features = {**current_plan_features, **stored_features}
+            
+            # If features are missing/outdated, update them in database
+            if stored_features != merged_features:
                 await self.premium_col.update_one(
                     {'user_id': int(user_id)},
-                    {'$set': {'features': plan_features}}
+                    {'$set': {'features': merged_features}}
                 )
-                return plan_features
-            return user['features']
+                print(f"✅ Updated features for Pro user {user_id}: added missing keys")
+            
+            return merged_features
         return self._get_plan_features('free')
     
     async def can_use_ftm_mode(self, user_id):
