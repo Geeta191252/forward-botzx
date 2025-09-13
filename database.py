@@ -352,6 +352,15 @@ class Database:
         )
         return True  # Trial successfully granted
 
+    async def get_trial_status(self, user_id):
+        """Get user's trial status - whether they have used their free trial"""
+        monthly_usage = await self.get_monthly_usage(user_id)
+        return {
+            'used': monthly_usage.get('trial_activated', False),
+            'trial_processes': monthly_usage.get('trial_processes', 0),
+            'granted_at': monthly_usage.get('trial_granted_at')
+        }
+
     async def get_user_process_limit(self, user_id):
         """Get user's total process limit including trials"""
         base_limit = await self.get_forwarding_limit(user_id)
