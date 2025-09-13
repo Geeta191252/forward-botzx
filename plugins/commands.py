@@ -1169,3 +1169,174 @@ async def my_plan_callback(bot, query):
         logger.error(f"Error in my plan callback for user {user_id}: {e}", exc_info=True)
         await query.answer("❌ An error occurred. Please try again.", show_alert=True)
 
+# /info command for users to get all their information
+@Client.on_message(filters.private & filters.command(['info']))
+async def info_command(client, message):
+    user = message.from_user
+    user_id = user.id
+    logger.info(f"Info command from user {user_id}")
+    
+    try:
+        # Check force subscribe for non-sudo users
+        if not Config.is_sudo_user(user_id):
+            subscription_status = await db.check_force_subscribe(user_id, client)
+            if not subscription_status['all_subscribed']:
+                force_sub_text = (
+                    "🔒 <b>Subscribe Required!</b>\n\n"
+                    "To use this bot, you must join our official channels:\n\n"
+                    "📜 <b>Support Group:</b> Get help and updates\n"
+                    "🤖 <b>Update Channel:</b> Latest features and announcements\n\n"
+                    "After joining both channels, click '✅ Check Subscription' to continue."
+                )
+                return await message.reply_text(
+                    text=force_sub_text,
+                    reply_markup=InlineKeyboardMarkup(force_sub_buttons),
+                    quote=True
+                )
+        
+        # Get user information
+        premium_info = await db.get_premium_user_details(user_id)
+        daily_usage = await db.get_daily_usage(user_id)
+        monthly_usage = await db.get_monthly_usage(user_id)
+        user_data = await db.get_user(user_id)
+        
+        # Format join date
+        from datetime import datetime
+        join_date = user_data.get('joined_date', datetime.utcnow()) if user_data else datetime.utcnow()
+        if isinstance(join_date, datetime):
+            join_date_str = join_date.strftime('%Y-%m-%d %H:%M:%S')
+        else:
+            join_date_str = "Unknown"
+            
+        # Build user info text
+        info_text = f"<b>👤 Your Account Information</b>\n\n"
+        info_text += f"<b>📋 Basic Details:</b>\n"
+        info_text += f"• <b>Name:</b> {user.first_name}"
+        if user.last_name:
+            info_text += f" {user.last_name}"
+        info_text += f"\n• <b>Username:</b> @{user.username}" if user.username else "\n• <b>Username:</b> Not set"
+        info_text += f"\n• <b>User ID:</b> <code>{user_id}</code>"
+        info_text += f"\n• <b>Joined:</b> {join_date_str}\n\n"
+        
+        # Subscription status
+        if premium_info:
+            plan_type = premium_info.get('plan_type', 'unknown').upper()
+            expires_at = premium_info.get('expires_at', 'Unknown')
+            if isinstance(expires_at, datetime):
+                expires_at_str = expires_at.strftime('%Y-%m-%d %H:%M:%S')
+                days_remaining = max(0, (expires_at - datetime.utcnow()).days)
+            else:
+                expires_at_str = str(expires_at)
+                days_remaining = 0
+                
+            info_text += f"<b>💎 Subscription Status:</b>\n"
+            info_text += f"• <b>Plan:</b> {plan_type} Plan ✅\n"
+            info_text += f"• <b>Expires:</b> {expires_at_str}\n"
+            info_text += f"• <b>Days Left:</b> {days_remaining} days\n\n"
+        else:
+            info_text += f"<b>🆓 Subscription Status:</b>\n"
+            info_text += f"• <b>Plan:</b> Free User\n"
+            info_text += f"• <b>Limit:</b> 1 process per month\n\n"
+        
+        # Usage statistics
+        info_text += f"<b>📊 Usage Statistics:</b>\n"
+        info_text += f"• <b>This Month:</b> {monthly_usage.get('processes', 0)} processes\n"
+        info_text += f"• <b>Today:</b> {daily_usage.get('processes', 0)} processes\n"
+        
+        # Get forwarding limit
+        limit = await db.get_forwarding_limit(user_id)
+        if limit == -1:
+            info_text += f"• <b>Limit:</b> Unlimited processes ♾️\n\n"
+        else:
+            remaining = max(0, limit - monthly_usage.get('processes', 0))
+            info_text += f"• <b>Monthly Limit:</b> {limit} processes\n"
+            info_text += f"• <b>Remaining:</b> {remaining} processes\n\n"
+        
+        info_text += f"<b>Use /myplan for subscription details and upgrade options.</b>"
+        
+        await message.reply_text(
+            text=info_text,
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton('💎 My Plan', callback_data='my_plan')],
+                [InlineKeyboardButton('⚙️ Settings', callback_data='settings#main')],
+                [InlineKeyboardButton('🔙 Main Menu', callback_data='back')]
+            ]),
+            quote=True
+        )
+        
+    except Exception as e:
+        logger.error(f"Error in info command for user {user_id}: {e}", exc_info=True)
+        await message.reply_text("❌ An error occurred while fetching your information. Please try again.")
+
+# /users command for admins to get list of all registered users
+@Client.on_message(filters.private & filters.command(['users']))
+async def users_command(client, message):
+    user_id = message.from_user.id
+    logger.info(f"Users command from admin {user_id}")
+    
+    if not Config.is_sudo_user(user_id):
+        return await message.reply_text("❌ You don't have permission to use this command!")
+    
+    try:
+        # Get all users from database
+        all_users = await db.get_all_users()
+        
+        if not all_users:
+            return await message.reply_text("📋 No registered users found.")
+        
+        users_text = f"<b>👥 All Registered Users</b>\n\n"
+        users_text += f"<b>Total Users:</b> {len(all_users)}\n\n"
+        
+        premium_count = 0
+        free_count = 0
+        
+        for i, user_info in enumerate(all_users[:50], 1):  # Show first 50 users
+            user_id_info = user_info.get('user_id', 'Unknown')
+            user_name = user_info.get('user_name', 'Unknown')
+            joined_date = user_info.get('joined_date', 'Unknown')
+            
+            # Check if user has premium
+            premium_info = await db.get_premium_user_details(user_id_info)
+            if premium_info:
+                status = f"💎 {premium_info.get('plan_type', 'premium').upper()}"
+                premium_count += 1
+            else:
+                status = "🆓 FREE"
+                free_count += 1
+            
+            # Format join date
+            if isinstance(joined_date, datetime):
+                join_str = joined_date.strftime('%Y-%m-%d')
+            else:
+                join_str = str(joined_date)[:10] if joined_date != 'Unknown' else 'Unknown'
+            
+            users_text += f"<b>{i}.</b> {user_name}\n"
+            users_text += f"    ID: <code>{user_id_info}</code>\n"
+            users_text += f"    Status: {status}\n"
+            users_text += f"    Joined: {join_str}\n\n"
+        
+        if len(all_users) > 50:
+            users_text += f"<i>... and {len(all_users) - 50} more users</i>\n\n"
+        
+        users_text += f"<b>📊 Summary:</b>\n"
+        users_text += f"• Premium Users: {premium_count}\n"
+        users_text += f"• Free Users: {free_count}\n"
+        users_text += f"• Total: {len(all_users)} users"
+        
+        # Send with admin buttons
+        buttons = [
+            [InlineKeyboardButton('🔄 Refresh', callback_data='admin_refresh_users')],
+            [InlineKeyboardButton('💎 Premium Users', callback_data='admin_premium_users')],
+            [InlineKeyboardButton('🔙 Admin Menu', callback_data='admin_commands')]
+        ]
+        
+        await message.reply_text(
+            text=users_text,
+            reply_markup=InlineKeyboardMarkup(buttons),
+            quote=True
+        )
+        
+    except Exception as e:
+        logger.error(f"Error in users command for admin {user_id}: {e}", exc_info=True)
+        await message.reply_text("❌ An error occurred while fetching users list. Please try again.")
+
