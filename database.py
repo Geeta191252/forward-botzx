@@ -275,7 +275,15 @@ class Database:
             'is_active': True,
             'expires_at': {'$gt': datetime.utcnow()}
         })
-        if user and 'features' in user:
+        if user:
+            # If user exists but features are missing/outdated, update them
+            if 'features' not in user or not user['features']:
+                plan_features = self._get_plan_features(user.get('plan_type', 'free'))
+                await self.premium_col.update_one(
+                    {'user_id': int(user_id)},
+                    {'$set': {'features': plan_features}}
+                )
+                return plan_features
             return user['features']
         return self._get_plan_features('free')
     
