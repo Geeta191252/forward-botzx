@@ -924,18 +924,25 @@ async def myplan_command(client, message):
             
         else:
             # Free user
-            processes_used = usage.get('processes', 0)
-            processes_limit = 1  # Free users get 1 process per month
+            # Get monthly usage and check trial status
+            monthly_usage = await db.get_monthly_usage(user_id)
+            processes_used = monthly_usage.get('processes', 0)
+            
+            # Check trial status for proper limit calculation
+            trial_status = await db.get_trial_status(user_id)
+            processes_limit = 1  # Base free process
+            if trial_status and trial_status.get('used', False):
+                processes_limit = 2  # Base + trial
             
             status_text = f"<b>🆓 Your Free Plan</b>\n\n"
             status_text += f"<b>Plan:</b> Free\n"
             status_text += f"<b>Status:</b> Active\n\n"
-            status_text += f"<b>📊 Today's Usage:</b>\n"
+            status_text += f"<b>📊 Monthly Usage:</b>\n"
             status_text += f"• <b>Used:</b> {processes_used}/{processes_limit} processes\n"
             status_text += f"• <b>Remaining:</b> {max(0, processes_limit - processes_used)} processes\n\n"
             
             if processes_used >= processes_limit:
-                status_text += f"<b>🚫 Daily limit reached!</b>\n"
+                status_text += f"<b>🚫 Monthly limit reached!</b>\n"
                 status_text += f"<b>💎 Upgrade to Premium for unlimited access!</b>\n\n"
             
             status_text += f"<b>💡 Upgrade to Premium:</b>\n"
