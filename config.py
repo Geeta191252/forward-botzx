@@ -11,14 +11,55 @@ class Config:
     ADMIN_ID = [int(id) for id in environ.get("ADMIN_ID", '7966880099').split() if id.strip()]
     LOG_CHANNEL_ID = int(environ.get("LOG_CHANNEL_ID", "-1003003594014"))
     
-    # Updated channel and group URLs
-    UPDATE_CHANNEL = "https://t.me/ftmbotzx"
-    SUPPORT_GROUP = "https://t.me/ftmbotzx_support"
-    # Note: Use actual channel usernames instead of hardcoded IDs for better reliability
-    UPDATE_CHANNEL_USERNAME = "ftmbotzx"  # Channel username without @
-    SUPPORT_GROUP_USERNAME = "ftmbotzx_support"  # Group username without @
-    UPDATE_CHANNEL_ID = int(environ.get("UPDATE_CHANNEL_ID", "-1002346789012"))  # Update channel ID for @ftmbotzx  
-    SUPPORT_GROUP_ID = int(environ.get("SUPPORT_GROUP_ID", "-1002345678901"))   # Support group ID for @ftmbotzx_support
+    # Multiple force subscribed channels support
+    # Format: channel_username:channel_id:channel_url:display_name
+    FORCE_SUBSCRIBE_CHANNELS = [
+        {
+            'username': 'ftmbotzx',
+            'id': int(environ.get("UPDATE_CHANNEL_ID", "-1002346789012")),
+            'url': "https://t.me/ftmbotzx",
+            'display_name': 'Update Channel',
+            'button_text': '🤖 Join Update Channel'
+        },
+        {
+            'username': 'ftmbotzx_support',
+            'id': int(environ.get("SUPPORT_GROUP_ID", "-1002345678901")),
+            'url': "https://t.me/ftmbotzx_support",
+            'display_name': 'Support Group',
+            'button_text': '📜 Join Support Group'
+        },
+        {
+            'username': 'ftmbotzx_support',
+            'id': int(environ.get("SUPPRT_CHANNEL_IDS", "-1003040147375")),
+            'url': "https://t.me/+YFeLaCAwh4E2ZGMx",
+            'display_name': 'Support Channel',
+            'button_text': '📜 Join Support Channel'
+        }
+        # Add more channels here as needed
+        # {
+        #     'username': 'your_third_channel',
+        #     'id': -1002345678902,
+        #     'url': "https://t.me/your_third_channel",
+        #     'display_name': 'Third Channel',
+        #     'button_text': '📺 Join Third Channel'
+        # },
+        # {
+        #     'username': 'your_fourth_channel',
+        #     'id': -1002345678903,
+        #     'url': "https://t.me/your_fourth_channel", 
+        #     'display_name': 'Fourth Channel',
+        #     'button_text': '🎬 Join Fourth Channel'
+        # }
+        # ... add up to 10 or more channels as needed
+    ]
+    
+    # Backward compatibility
+    UPDATE_CHANNEL = FORCE_SUBSCRIBE_CHANNELS[0]['url']
+    SUPPORT_GROUP = FORCE_SUBSCRIBE_CHANNELS[1]['url']
+    UPDATE_CHANNEL_USERNAME = FORCE_SUBSCRIBE_CHANNELS[0]['username']
+    SUPPORT_GROUP_USERNAME = FORCE_SUBSCRIBE_CHANNELS[1]['username']
+    UPDATE_CHANNEL_ID = FORCE_SUBSCRIBE_CHANNELS[0]['id']
+    SUPPORT_GROUP_ID = FORCE_SUBSCRIBE_CHANNELS[1]['id']
     
     # Three-tier pricing structure
     PLAN_PRICING = {
