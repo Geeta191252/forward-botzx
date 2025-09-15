@@ -568,57 +568,58 @@ class Database:
     
     # Force subscribe functionality
     async def check_force_subscribe(self, user_id, client):
-        """Check if user is subscribed to required channels"""
+        """Check if user is subscribed to all required channels"""
         from config import Config
         
         try:
-            update_subscribed = False
-            group_subscribed = False
+            subscription_results = {}
+            all_subscribed = True
             
-            # Check update channel subscription using username (more reliable)
-            try:
-                member = await client.get_chat_member(f"@{Config.UPDATE_CHANNEL_USERNAME}", user_id)
-                update_subscribed = member.status not in ['left', 'kicked']
-                print(f"Update channel check: {update_subscribed} for user {user_id}")
-            except Exception as e:
-                print(f"Error checking update channel: {e}")
-                # Fallback to ID if username fails
-                try:
-                    member = await client.get_chat_member(Config.UPDATE_CHANNEL_ID, user_id)
-                    update_subscribed = member.status not in ['left', 'kicked']
-                except:
-                    update_subscribed = False
-            
-            # Check support group subscription using username (more reliable)
-            try:
-                member = await client.get_chat_member(f"@{Config.SUPPORT_GROUP_USERNAME}", user_id)
-                group_subscribed = member.status not in ['left', 'kicked']
-                print(f"Support group check: {group_subscribed} for user {user_id}")
-            except Exception as e:
-                print(f"Error checking support group: {e}")
-                # Fallback to ID if username fails
-                try:
-                    member = await client.get_chat_member(Config.SUPPORT_GROUP_ID, user_id)
-                    group_subscribed = member.status not in ['left', 'kicked']
-                except:
-                    group_subscribed = False
+            for channel in Config.FORCE_SUBSCRIBE_CHANNELS:
+                subscribed = False
+                channel_key = channel['username']
                 
+                # Check subscription using username first (more reliable)
+                try:
+                    member = await client.get_chat_member(f"@{channel['username']}", user_id)
+                    subscribed = member.status not in ['left', 'kicked']
+                    print(f"{channel['display_name']} check: {subscribed} for user {user_id}")
+                except Exception as e:
+                    print(f"Error checking {channel['display_name']} with username: {e}")
+                    # Fallback to ID if username fails
+                    try:
+                        member = await client.get_chat_member(channel['id'], user_id)
+                        subscribed = member.status not in ['left', 'kicked']
+                        print(f"{channel['display_name']} check (ID fallback): {subscribed} for user {user_id}")
+                    except Exception as id_error:
+                        print(f"Error checking {channel['display_name']} with ID: {id_error}")
+                        subscribed = False
+                
+                subscription_results[channel_key] = subscribed
+                if not subscribed:
+                    all_subscribed = False
+            
             result = {
-                'update_channel': update_subscribed,
-                'support_group': group_subscribed,
-                'all_subscribed': update_subscribed and group_subscribed
+                **subscription_results,
+                'all_subscribed': all_subscribed,
+                'missing_channels': [
+                    channel['display_name'] for channel in Config.FORCE_SUBSCRIBE_CHANNELS 
+                    if not subscription_results.get(channel['username'], False)
+                ]
             }
+            
             print(f"Subscription check result for user {user_id}: {result}")
             return result
             
         except Exception as e:
             print(f"Force subscribe check error: {e}")
             # If there's an error checking, assume not subscribed
-            return {
-                'update_channel': False,
-                'support_group': False,
-                'all_subscribed': False
-            }
+            default_result = {channel['username']: False for channel in Config.FORCE_SUBSCRIBE_CHANNELS}
+            default_result.update({
+                'all_subscribed': False,
+                'missing_channels': [channel['display_name'] for channel in Config.FORCE_SUBSCRIBE_CHANNELS]
+            })
+            return default_result
 
     # Admin chat sessions
     async def start_admin_chat(self, admin_id, target_user_id):
