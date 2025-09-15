@@ -34,13 +34,28 @@ main_buttons = [[
         InlineKeyboardButton('📞 Contact Admin', callback_data='contact_admin')
         ]]
 
-# Force subscribe buttons
-force_sub_buttons = [[
-        InlineKeyboardButton('📜 Join Support Group', url=Config.SUPPORT_GROUP),
-        InlineKeyboardButton('🤖 Join Update Channel', url=Config.UPDATE_CHANNEL)
-        ],[
-        InlineKeyboardButton('✅ Check Subscription', callback_data='check_subscription')
-        ]]
+# Dynamic force subscribe buttons based on config
+def get_force_sub_buttons():
+    """Generate force subscribe buttons based on configured channels"""
+    buttons = []
+    
+    # Add channel buttons in rows of 2
+    for i in range(0, len(Config.FORCE_SUBSCRIBE_CHANNELS), 2):
+        row = []
+        for j in range(2):
+            if i + j < len(Config.FORCE_SUBSCRIBE_CHANNELS):
+                channel = Config.FORCE_SUBSCRIBE_CHANNELS[i + j]
+                row.append(InlineKeyboardButton(
+                    channel['button_text'], 
+                    url=channel['url']
+                ))
+        buttons.append(row)
+    
+    # Add check subscription button
+    buttons.append([InlineKeyboardButton('✅ Check Subscription', callback_data='check_subscription')])
+    return buttons
+
+force_sub_buttons = get_force_sub_buttons()
 
 
 #===================Start Function===================#
@@ -123,13 +138,13 @@ async def check_subscription_callback(client, callback_query):
                 reply_markup=reply_markup
             )
         else:
-            missing = []
-            if not subscription_status['update_channel']:
-                missing.append("Update Channel")
-            if not subscription_status['support_group']:
-                missing.append("Support Group")
+            missing_channels = subscription_status.get('missing_channels', [])
+            if len(missing_channels) > 3:
+                missing_text = f"{', '.join(missing_channels[:3])} and {len(missing_channels) - 3} more"
+            else:
+                missing_text = ', '.join(missing_channels)
                 
-            await callback_query.answer(f"❌ Please join: {', '.join(missing)}", show_alert=True)
+            await callback_query.answer(f"❌ Please join: {missing_text}", show_alert=True)
             
     except Exception as e:
         await callback_query.answer("❌ Error checking subscription. Please try again.", show_alert=True)
@@ -1285,6 +1300,144 @@ async def info_command(client, message):
         logger.error(f"Error in info command for user {user_id}: {e}", exc_info=True)
         await message.reply_text("❌ An error occurred while fetching your information. Please try again.")
 
+# Helper function to generate users list text and buttons
+async def generate_users_list(page=1):
+    """Generate users list with pagination"""
+    # Get all users from database
+    all_users = await db.get_all_users()
+    
+    if not all_users:
+        return "📋 No registered users found.", []
+    
+    # Pagination settings
+    users_per_page = 10
+    total_pages = (len(all_users) + users_per_page - 1) // users_per_page
+    
+    # Ensure page is within bounds
+    page = max(1, min(page, total_pages))
+    
+    start_idx = (page - 1) * users_per_page
+    end_idx = min(start_idx + users_per_page, len(all_users))
+    
+    # Count statistics
+    premium_count = plus_count = pro_count = free_count = active_today = 0
+    
+    from datetime import datetime, timedelta
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    
+    # Enhanced header with statistics
+    users_text = f"<b>👥 All Registered Users</b>\n\n"
+    users_text += f"<b>📄 Page {page} of {total_pages}</b>\n"
+    users_text += f"<b>📊 Total Users: {len(all_users)}</b>\n"
+    users_text += f"{'='*40}\n\n"
+    
+    # Process users for current page
+    for i, user_info in enumerate(all_users[start_idx:end_idx], start_idx + 1):
+        user_id_info = user_info.get('id', 'Unknown')
+        user_name = user_info.get('name', 'Unknown')
+        joined_date = user_info.get('joined_date', 'Unknown')
+        
+        # Check if user has premium
+        premium_info = await db.get_premium_user_details(user_id_info)
+        if premium_info:
+            plan_type = premium_info.get('plan_type', 'premium').upper()
+            if plan_type == 'PRO':
+                status = "💎 PRO"
+                pro_count += 1
+            elif plan_type == 'PLUS':
+                status = "💎 PLUS"  
+                plus_count += 1
+            else:
+                status = f"💎 {plan_type}"
+                premium_count += 1
+            
+            # Check expiry
+            expires_at = premium_info.get('expires_at')
+            if expires_at and isinstance(expires_at, datetime):
+                days_left = (expires_at - datetime.utcnow()).days
+                if days_left <= 0:
+                    status += " (EXPIRED)"
+                elif days_left <= 3:
+                    status += f" ({days_left}d)"
+        else:
+            status = "🆓 FREE"
+            free_count += 1
+        
+        # Format join date and check if active today
+        if isinstance(joined_date, datetime):
+            join_str = joined_date.strftime('%Y-%m-%d')
+            if joined_date >= today:
+                active_today += 1
+        else:
+            join_str = "Unknown"
+        
+        # Truncate long names for better display
+        display_name = user_name[:20] + "..." if len(user_name) > 20 else user_name
+        
+        users_text += f"<b>{i}.</b> <b>{display_name}</b>\n"
+        users_text += f"    <b>ID:</b> <code>{user_id_info}</code>\n"
+        users_text += f"    <b>Status:</b> {status}\n"
+        users_text += f"    <b>Joined:</b> {join_str}\n\n"
+    
+    # Summary statistics
+    users_text += f"{'='*40}\n"
+    users_text += f"<b>📊 Summary:</b>\n"
+    users_text += f"• <b>Premium Users:</b> {pro_count + plus_count}\n"
+    users_text += f"• <b>Free Users:</b> {free_count}\n" 
+    users_text += f"• <b>Total:</b> {len(all_users)} users\n\n"
+    
+    # Generate pagination buttons
+    buttons = []
+    nav_row = []
+    
+    # First and Previous buttons
+    if page > 1:
+        if page > 2:
+            nav_row.append(InlineKeyboardButton('⏪ First', callback_data='users_list_1'))
+        nav_row.append(InlineKeyboardButton('◀️ Previous', callback_data=f'users_list_{page-1}'))
+    
+    # Current page indicator
+    nav_row.append(InlineKeyboardButton(f'• {page}/{total_pages} •', callback_data='users_current'))
+    
+    # Next and Last buttons  
+    if page < total_pages:
+        nav_row.append(InlineKeyboardButton('Next ▶️', callback_data=f'users_list_{page+1}'))
+        if page < total_pages - 1:
+            nav_row.append(InlineKeyboardButton('Last ⏩', callback_data=f'users_list_{total_pages}'))
+    
+    if nav_row:
+        buttons.append(nav_row)
+    
+    # Quick jump buttons (show nearby pages)
+    if total_pages > 5:
+        jump_row = []
+        start_jump = max(1, page - 2)
+        end_jump = min(total_pages, page + 2)
+        
+        for p in range(start_jump, end_jump + 1):
+            if p != page:
+                jump_row.append(InlineKeyboardButton(str(p), callback_data=f'users_list_{p}'))
+        
+        if jump_row:
+            buttons.append(jump_row)
+    
+    # Action buttons
+    buttons.extend([
+        [
+            InlineKeyboardButton('🔄 Refresh', callback_data=f'users_list_{page}'),
+            InlineKeyboardButton('💎 Premium Only', callback_data='admin_premium_users')
+        ],
+        [
+            InlineKeyboardButton('📈 User Stats', callback_data='admin_user_stats'),
+            InlineKeyboardButton('🆓 Free Only', callback_data='admin_free_users')
+        ],
+        [
+            InlineKeyboardButton('🔙 Admin Menu', callback_data='admin_commands')
+        ]
+    ])
+    
+    return users_text, buttons
+
 # /users command for admins to get list of all registered users
 @Client.on_message(filters.private & filters.command(['users']))
 async def users_command(client, message):
@@ -1295,57 +1448,8 @@ async def users_command(client, message):
         return await message.reply_text("❌ You don't have permission to use this command!")
     
     try:
-        # Get all users from database
-        all_users = await db.get_all_users()
-        
-        if not all_users:
-            return await message.reply_text("📋 No registered users found.")
-        
-        users_text = f"<b>👥 All Registered Users</b>\n\n"
-        users_text += f"<b>Total Users:</b> {len(all_users)}\n\n"
-        
-        premium_count = 0
-        free_count = 0
-        
-        for i, user_info in enumerate(all_users[:50], 1):  # Show first 50 users
-            user_id_info = user_info.get('id', 'Unknown')
-            user_name = user_info.get('name', 'Unknown')
-            joined_date = user_info.get('joined_date', 'Unknown')
-            
-            # Check if user has premium
-            premium_info = await db.get_premium_user_details(user_id_info)
-            if premium_info:
-                status = f"💎 {premium_info.get('plan_type', 'premium').upper()}"
-                premium_count += 1
-            else:
-                status = "🆓 FREE"
-                free_count += 1
-            
-            # Format join date
-            if isinstance(joined_date, datetime):
-                join_str = joined_date.strftime('%Y-%m-%d')
-            else:
-                join_str = str(joined_date)[:10] if joined_date != 'Unknown' else 'Unknown'
-            
-            users_text += f"<b>{i}.</b> {user_name}\n"
-            users_text += f"    ID: <code>{user_id_info}</code>\n"
-            users_text += f"    Status: {status}\n"
-            users_text += f"    Joined: {join_str}\n\n"
-        
-        if len(all_users) > 50:
-            users_text += f"<i>... and {len(all_users) - 50} more users</i>\n\n"
-        
-        users_text += f"<b>📊 Summary:</b>\n"
-        users_text += f"• Premium Users: {premium_count}\n"
-        users_text += f"• Free Users: {free_count}\n"
-        users_text += f"• Total: {len(all_users)} users"
-        
-        # Send with admin buttons
-        buttons = [
-            [InlineKeyboardButton('🔄 Refresh', callback_data='admin_refresh_users')],
-            [InlineKeyboardButton('💎 Premium Users', callback_data='admin_premium_users')],
-            [InlineKeyboardButton('🔙 Admin Menu', callback_data='admin_commands')]
-        ]
+        # Generate users list for page 1
+        users_text, buttons = await generate_users_list(1)
         
         await message.reply_text(
             text=users_text,
@@ -1356,4 +1460,179 @@ async def users_command(client, message):
     except Exception as e:
         logger.error(f"Error in users command for admin {user_id}: {e}", exc_info=True)
         await message.reply_text("❌ An error occurred while fetching users list. Please try again.")
+
+# Enhanced callback handlers for user list pagination
+@Client.on_callback_query(filters.regex(r'^users_list_(\d+)$'))
+async def users_list_callback(client, callback_query):
+    user_id = callback_query.from_user.id
+    
+    if not Config.is_sudo_user(user_id):
+        return await callback_query.answer("❌ You don't have permission!", show_alert=True)
+    
+    try:
+        page = int(callback_query.data.split('_')[2])
+        
+        # Generate users list for the requested page
+        users_text, buttons = await generate_users_list(page)
+        
+        await callback_query.message.edit_text(
+            text=users_text,
+            reply_markup=InlineKeyboardMarkup(buttons)
+        )
+        
+        await callback_query.answer(f"📄 Page {page}")
+        
+    except Exception as e:
+        logger.error(f"Error in users list callback: {e}", exc_info=True)
+        await callback_query.answer("❌ Error loading page!", show_alert=True)
+
+@Client.on_callback_query(filters.regex(r'^users_current$'))
+async def users_current_callback(client, callback_query):
+    """Handle current page indicator click"""
+    await callback_query.answer("📍 Current page", show_alert=False)
+
+@Client.on_callback_query(filters.regex(r'^admin_free_users$'))
+async def admin_free_users_callback(client, callback_query):
+    user_id = callback_query.from_user.id
+    
+    if not Config.is_sudo_user(user_id):
+        return await callback_query.answer("❌ You don't have permission!", show_alert=True)
+    
+    try:
+        # Get all users and filter free users
+        all_users = await db.get_all_users()
+        free_users = []
+        
+        for user_info in all_users:
+            user_id_info = user_info.get('id')
+            if not await db.is_premium_user(user_id_info):
+                free_users.append(user_info)
+        
+        if not free_users:
+            return await callback_query.message.edit_text(
+                "<b>🆓 Free Users</b>\n\n<i>No free users found!</i>",
+                reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton('🔙 Back', callback_data='admin_commands')]])
+            )
+        
+        users_text = f"<b>🆓 Free Users Only</b>\n"
+        users_text += f"<b>Total Free Users:</b> {len(free_users)}\n"
+        users_text += f"{'='*30}\n\n"
+        
+        for i, user_info in enumerate(free_users[:20], 1):  # Show first 20 free users
+            user_id_info = user_info.get('id', 'Unknown')
+            user_name = user_info.get('name', 'Unknown')
+            joined_date = user_info.get('joined_date', 'Unknown')
+            
+            # Format join date
+            if isinstance(joined_date, datetime):
+                join_str = joined_date.strftime('%d %b %Y')
+            else:
+                join_str = "Unknown"
+            
+            # Check usage
+            usage = await db.get_monthly_usage(user_id_info)
+            usage_count = usage.get('processes', 0)
+            
+            display_name = user_name[:20] + "..." if len(user_name) > 20 else user_name
+            
+            users_text += f"<b>{i:2d}.</b> {display_name}\n"
+            users_text += f"     <b>ID:</b> <code>{user_id_info}</code>\n"
+            users_text += f"     <b>Usage:</b> {usage_count}/2 processes\n"
+            users_text += f"     <b>Joined:</b> {join_str}\n\n"
+        
+        if len(free_users) > 20:
+            users_text += f"<i>... and {len(free_users) - 20} more free users</i>\n"
+        
+        buttons = [
+            [InlineKeyboardButton('👥 All Users', callback_data='users_page_1')],
+            [InlineKeyboardButton('🔙 Admin Menu', callback_data='admin_commands')]
+        ]
+        
+        await callback_query.message.edit_text(
+            text=users_text,
+            reply_markup=InlineKeyboardMarkup(buttons)
+        )
+        
+    except Exception as e:
+        await callback_query.answer(f"❌ Error: {str(e)}", show_alert=True)
+
+@Client.on_callback_query(filters.regex(r'^admin_user_stats$'))
+async def admin_user_stats_callback(client, callback_query):
+    user_id = callback_query.from_user.id
+    
+    if not Config.is_sudo_user(user_id):
+        return await callback_query.answer("❌ You don't have permission!", show_alert=True)
+    
+    try:
+        # Get comprehensive user statistics
+        all_users = await db.get_all_users()
+        premium_users = await db.get_all_premium_users()
+        
+        from datetime import datetime, timedelta
+        today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        week_ago = today - timedelta(days=7)
+        month_ago = today - timedelta(days=30)
+        
+        # Count statistics
+        total_users = len(all_users)
+        total_premium = len(premium_users)
+        total_free = total_users - total_premium
+        
+        # Count by plan type
+        pro_users = len([p for p in premium_users if p.get('plan_type') == 'pro'])
+        plus_users = len([p for p in premium_users if p.get('plan_type') == 'plus'])
+        
+        # Count by join date
+        new_today = len([u for u in all_users if u.get('joined_date', datetime.min) >= today])
+        new_week = len([u for u in all_users if u.get('joined_date', datetime.min) >= week_ago])
+        new_month = len([u for u in all_users if u.get('joined_date', datetime.min) >= month_ago])
+        
+        # Revenue calculation
+        estimated_revenue = (pro_users * 549) + (plus_users * 299)
+        
+        stats_text = f"""<b>📊 Comprehensive User Statistics</b>
+
+<b>👥 User Base Overview:</b>
+├ <b>Total Users:</b> {total_users:,}
+├ <b>Premium Users:</b> {total_premium:,} ({total_premium/total_users*100:.1f}%)
+└ <b>Free Users:</b> {total_free:,} ({total_free/total_users*100:.1f}%)
+
+<b>💎 Premium Breakdown:</b>
+├ <b>🔥 Pro Users:</b> {pro_users:,}
+├ <b>✨ Plus Users:</b> {plus_users:,}
+└ <b>💰 Est. Revenue:</b> ₹{estimated_revenue:,}
+
+<b>📈 Growth Statistics:</b>
+├ <b>New Today:</b> {new_today:,}
+├ <b>New This Week:</b> {new_week:,}
+└ <b>New This Month:</b> {new_month:,}
+
+<b>📊 Conversion Rate:</b>
+├ <b>Free to Premium:</b> {total_premium/total_users*100:.1f}%
+├ <b>Pro Preference:</b> {pro_users/(pro_users+plus_users)*100 if (pro_users+plus_users) > 0 else 0:.1f}%
+└ <b>Daily Avg Signups:</b> {new_month/30:.1f}
+
+<b>💡 Business Insights:</b>
+• Premium conversion rate is {'excellent' if total_premium/total_users > 0.15 else 'good' if total_premium/total_users > 0.1 else 'needs improvement'}
+• {'Strong' if new_today > 5 else 'Moderate' if new_today > 2 else 'Low'} user acquisition today
+• Monthly revenue trend: ₹{estimated_revenue:,}"""
+        
+        buttons = [
+            [
+                InlineKeyboardButton('👥 All Users', callback_data='users_page_1'),
+                InlineKeyboardButton('💎 Premium Only', callback_data='admin_premium_users')
+            ],
+            [
+                InlineKeyboardButton('🔄 Refresh Stats', callback_data='admin_user_stats'),
+                InlineKeyboardButton('🔙 Admin Menu', callback_data='admin_commands')
+            ]
+        ]
+        
+        await callback_query.message.edit_text(
+            text=stats_text,
+            reply_markup=InlineKeyboardMarkup(buttons)
+        )
+        
+    except Exception as e:
+        await callback_query.answer(f"❌ Error: {str(e)}", show_alert=True)
 
