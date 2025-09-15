@@ -10,13 +10,28 @@ from pyrogram.errors.exceptions.not_acceptable_406 import ChannelPrivate as Priv
 from pyrogram.errors.exceptions.bad_request_400 import ChannelInvalid, ChatAdminRequired, UsernameInvalid, UsernameNotModified, ChannelPrivate
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, CallbackQuery, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
 
-# Force subscribe buttons
-force_sub_buttons = [[
-        InlineKeyboardButton('📜 Join Support Group', url=Config.SUPPORT_GROUP),
-        InlineKeyboardButton('🤖 Join Update Channel', url=Config.UPDATE_CHANNEL)
-        ],[
-        InlineKeyboardButton('✅ Check Subscription', callback_data='check_subscription')
-        ]]
+# Dynamic force subscribe buttons based on config
+def get_force_sub_buttons():
+    """Generate force subscribe buttons based on configured channels"""
+    buttons = []
+    
+    # Add channel buttons in rows of 2
+    for i in range(0, len(Config.FORCE_SUBSCRIBE_CHANNELS), 2):
+        row = []
+        for j in range(2):
+            if i + j < len(Config.FORCE_SUBSCRIBE_CHANNELS):
+                channel = Config.FORCE_SUBSCRIBE_CHANNELS[i + j]
+                row.append(InlineKeyboardButton(
+                    channel['button_text'], 
+                    url=channel['url']
+                ))
+        buttons.append(row)
+    
+    # Add check subscription button
+    buttons.append([InlineKeyboardButton('✅ Check Subscription', callback_data='check_subscription')])
+    return buttons
+
+force_sub_buttons = get_force_sub_buttons()
  
 #===================Run Function===================#
 
