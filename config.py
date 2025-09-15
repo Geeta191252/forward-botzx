@@ -6,7 +6,7 @@ class Config:
     BOT_TOKEN = environ.get("BOT_TOKEN", "8101859818:AAFGgME2zDxkcyKSfnDOGd0UhLacq0gvBzY") 
     BOT_SESSION = environ.get("BOT_SESSION", "forward-bot") 
     DATABASE_URI = environ.get("DATABASE", "mongodb+srv://ftm:ftm@cluster0.9a4gw2t.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
-    DATABASE_NAME = environ.get("DATABASE_NAME", "forward-botzx")
+    DATABASE_NAME = environ.get("DATABASE_NAME", "forwrd-botzx")
     OWNER_ID = [int(id) for id in environ.get("OWNER_ID", '7744665378').split()]
     ADMIN_ID = [int(id) for id in environ.get("ADMIN_ID", '7966880099').split() if id.strip()]
     LOG_CHANNEL_ID = int(environ.get("LOG_CHANNEL_ID", "-1003003594014"))
@@ -19,7 +19,7 @@ class Config:
             'id': int(environ.get("UPDATE_CHANNEL_ID", "-1002346789012")),
             'url': "https://t.me/ftmbotzx",
             'display_name': 'Update Channel',
-            'button_text': '🤖 Join Update Channel'
+            'button_text': '🤖 Join Main Channel'
         },
         {
             'username': 'ftmbotzx_support',
@@ -32,8 +32,8 @@ class Config:
             'username': 'ftmbotzx_support',
             'id': int(environ.get("SUPPRT_CHANNEL_IDS", "-1003040147375")),
             'url': "https://t.me/+YFeLaCAwh4E2ZGMx",
-            'display_name': 'Support Channel',
-            'button_text': '📜 Join Support Channel'
+            'display_name': '3 Channel',
+            'button_text': '📜 Join Updates Channel'
         }
         # Add more channels here as needed
         # {
