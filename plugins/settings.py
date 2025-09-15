@@ -8,18 +8,33 @@ from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 CLIENT = CLIENT()
 
-# Force subscribe buttons
-force_sub_buttons = [[
-        InlineKeyboardButton('📜 Join Support Group', url=Config.SUPPORT_GROUP),
-        InlineKeyboardButton('🤖 Join Update Channel', url=Config.UPDATE_CHANNEL)
-        ],[
-        InlineKeyboardButton('✅ Check Subscription', callback_data='check_subscription')
-        ]]
+# Dynamic force subscribe buttons based on config
+def get_force_sub_buttons():
+    """Generate force subscribe buttons based on configured channels"""
+    buttons = []
+
+    # Add channel buttons in rows of 2
+    for i in range(0, len(Config.FORCE_SUBSCRIBE_CHANNELS), 2):
+        row = []
+        for j in range(2):
+            if i + j < len(Config.FORCE_SUBSCRIBE_CHANNELS):
+                channel = Config.FORCE_SUBSCRIBE_CHANNELS[i + j]
+                row.append(InlineKeyboardButton(
+                    channel['button_text'], 
+                    url=channel['url']
+                ))
+        buttons.append(row)
+
+    # Add check subscription button
+    buttons.append([InlineKeyboardButton('✅ Check Subscription', callback_data='check_subscription')])
+    return buttons
+
+force_sub_buttons = get_force_sub_buttons()
 
 @Client.on_message(filters.command('settings'))
 async def settings(client, message):
    user_id = message.from_user.id
-   
+
    # Check force subscribe for non-sudo users
    if not Config.is_sudo_user(user_id):
        subscription_status = await db.check_force_subscribe(user_id, client)
@@ -36,17 +51,17 @@ async def settings(client, message):
                text=force_sub_text,
                reply_markup=InlineKeyboardMarkup(force_sub_buttons)
            )
-   
+
    await message.delete()
    await message.reply_text(
      "<b>change your settings as your wish</b>",
      reply_markup=main_buttons()
      )
-    
+
 @Client.on_callback_query(filters.regex(r'^settings'))
 async def settings_query(bot, query):
   user_id = query.from_user.id
-  
+
   # Check force subscribe for non-sudo users
   if not Config.is_sudo_user(user_id):
       subscription_status = await db.check_force_subscribe(user_id, bot)
@@ -62,15 +77,15 @@ async def settings_query(bot, query):
               text=force_sub_text,
               reply_markup=InlineKeyboardMarkup(force_sub_buttons)
           )
-  
+
   i, type = query.data.split("#")
   buttons = [[InlineKeyboardButton('↩ Back', callback_data="settings#main")]]
-  
+
   if type=="main":
      await query.message.edit_text(
        "<b>change your settings as your wish</b>",
        reply_markup=main_buttons())
-       
+
   elif type=="bots":
      buttons = [] 
      _bot = await db.get_bot(user_id)
@@ -79,22 +94,22 @@ async def settings_query(bot, query):
                          callback_data=f"settings#editbot")])
      else:
         buttons.append([InlineKeyboardButton('✚ Add bot ✚', 
-                         callback_data="settings#addbot")])
+                      callback_data="settings#addbot")])
         buttons.append([InlineKeyboardButton('✚ Add User bot (Session) ✚', 
-                         callback_data="settings#adduserbot")])
+                      callback_data="settings#adduserbot")])
         buttons.append([InlineKeyboardButton('✚ Add User bot (Phone) ✚', 
-                         callback_data="settings#addphonebot")])
+                      callback_data="settings#addphonebot")])
      buttons.append([InlineKeyboardButton('↩ Back', 
                       callback_data="settings#main")])
      await query.message.edit_text(
        "<b><u>My Bots</b></u>\n\n<b>You can manage your bots in here</b>",
        reply_markup=InlineKeyboardMarkup(buttons))
-  
+
   elif type=="addbot":
      await query.message.delete()
      bot = await CLIENT.add_bot(bot, query)
      if bot != True: return
-     
+
      # Send notification for bot addition
      try:
          from utils.notifications import NotificationManager
@@ -102,16 +117,16 @@ async def settings_query(bot, query):
          await notify.notify_user_action(user_id, "Added Bot Token", "Bot token successfully added to database", "Bot Management")
      except Exception as notify_err:
          print(f"Failed to send bot addition notification: {notify_err}")
-     
+
      await query.message.reply_text(
         "<b>bot token successfully added to db</b>",
         reply_markup=InlineKeyboardMarkup(buttons))
-  
+
   elif type=="adduserbot":
      await query.message.delete()
      user = await CLIENT.add_session(bot, query)
      if user != True: return
-     
+
      # Send notification for userbot session addition
      try:
          from utils.notifications import NotificationManager
@@ -119,16 +134,16 @@ async def settings_query(bot, query):
          await notify.notify_user_action(user_id, "Added Userbot Session", "Userbot session successfully added to database", "Bot Management")
      except Exception as notify_err:
          print(f"Failed to send userbot session addition notification: {notify_err}")
-     
+
      await query.message.reply_text(
         "<b>session successfully added to db</b>",
         reply_markup=InlineKeyboardMarkup(buttons))
-  
+
   elif type=="addphonebot":
      await query.message.delete()
      user = await CLIENT.add_phone_login(bot, query)
      if user != True: return
-     
+
      # Send notification for phone bot addition
      try:
          from utils.notifications import NotificationManager
@@ -136,11 +151,11 @@ async def settings_query(bot, query):
          await notify.notify_user_action(user_id, "Added Phone Bot", "Userbot successfully logged in via phone and added to database", "Bot Management")
      except Exception as notify_err:
          print(f"Failed to send phone bot addition notification: {notify_err}")
-     
+
      await query.message.reply_text(
         "<b>user bot successfully logged in and added to db</b>",
         reply_markup=InlineKeyboardMarkup(buttons))
-      
+
   elif type=="channels":
      buttons = []
      channels = await db.get_user_channels(user_id)
@@ -154,7 +169,7 @@ async def settings_query(bot, query):
      await query.message.edit_text( 
        "<b><u>My Channels</b></u>\n\n<b>you can manage your target chats in here</b>",
        reply_markup=InlineKeyboardMarkup(buttons))
-   
+
   elif type=="addchannel":  
      await query.message.delete()
      try:
@@ -175,7 +190,7 @@ async def settings_query(bot, query):
             username = "@" + username if username else "private"
          chat = await db.add_channel(user_id, chat_id, title, username)
          await chat_ids.delete()
-         
+
          # Send notification for channel addition
          if chat:  # Only if channel was actually added (not already existing)
              try:
@@ -184,13 +199,13 @@ async def settings_query(bot, query):
                  await notify.notify_user_action(user_id, "Added Channel", f"Channel: {title} (ID: {chat_id})")
              except Exception as notify_err:
                  print(f"Failed to send channel addition notification: {notify_err}")
-         
+
          await text.edit_text(
             "<b>Successfully updated</b>" if chat else "<b>This channel already added</b>",
             reply_markup=InlineKeyboardMarkup(buttons))
      except asyncio.exceptions.TimeoutError:
          await text.edit_text('Process has been automatically cancelled', reply_markup=InlineKeyboardMarkup(buttons))
-  
+
   elif type=="editbot": 
      bot = await db.get_bot(user_id)
      TEXT = Translation.BOT_DETAILS if bot['is_bot'] else Translation.USER_DETAILS
@@ -200,12 +215,12 @@ async def settings_query(bot, query):
      await query.message.edit_text(
         TEXT.format(bot['name'], bot['id'], bot['username']),
         reply_markup=InlineKeyboardMarkup(buttons))
-                                             
+
   elif type=="removebot":
      # Get bot details before removal for notification
      bot_details = await db.get_bot(user_id)
      await db.remove_bot(user_id)
-     
+
      # Send notification for bot removal
      try:
          from utils.notifications import NotificationManager
@@ -214,11 +229,11 @@ async def settings_query(bot, query):
          await notify.notify_user_action(user_id, "Removed Bot", bot_info)
      except Exception as notify_err:
          print(f"Failed to send bot removal notification: {notify_err}")
-     
+
      await query.message.edit_text(
         "<b>successfully updated</b>",
         reply_markup=InlineKeyboardMarkup(buttons))
-                                             
+
   elif type.startswith("editchannels"): 
      chat_id = type.split('_')[1]
      chat = await db.get_channel_details(user_id, chat_id)
@@ -228,13 +243,13 @@ async def settings_query(bot, query):
      await query.message.edit_text(
         f"<b><u>📄 CHANNEL DETAILS</b></u>\n\n<b>- TITLE:</b> <code>{chat['title']}</code>\n<b>- CHANNEL ID: </b> <code>{chat['chat_id']}</code>\n<b>- USERNAME:</b> {chat['username']}",
         reply_markup=InlineKeyboardMarkup(buttons))
-                                             
+
   elif type.startswith("removechannel"):
      chat_id = type.split('_')[1]
      # Get channel details before removal for notification
      channel_details = await db.get_channel_details(user_id, chat_id)
      await db.remove_channel(user_id, chat_id)
-     
+
      # Send notification for channel removal
      try:
          from utils.notifications import NotificationManager
@@ -243,11 +258,11 @@ async def settings_query(bot, query):
          await notify.notify_user_action(user_id, "Removed Channel", channel_info)
      except Exception as notify_err:
          print(f"Failed to send channel removal notification: {notify_err}")
-     
+
      await query.message.edit_text(
         "<b>successfully updated</b>",
         reply_markup=InlineKeyboardMarkup(buttons))
-                               
+
   elif type=="caption":
      buttons = []
      data = await get_configs(user_id)
@@ -265,7 +280,7 @@ async def settings_query(bot, query):
      await query.message.edit_text(
         "<b><u>CUSTOM CAPTION</b></u>\n\n<b>You can set a custom caption to videos and documents. Normaly use its default caption</b>\n\n<b><u>AVAILABLE FILLINGS:</b></u>\n- <code>{filename}</code> : Filename\n- <code>{size}</code> : File size\n- <code>{caption}</code> : default caption",
         reply_markup=InlineKeyboardMarkup(buttons))
-                               
+
   elif type=="seecaption":   
      data = await get_configs(user_id)
      buttons = [[InlineKeyboardButton('🖋️ Edit Caption', 
@@ -276,13 +291,13 @@ async def settings_query(bot, query):
      await query.message.edit_text(
         f"<b><u>YOUR CUSTOM CAPTION</b></u>\n\n<code>{data['caption']}</code>",
         reply_markup=InlineKeyboardMarkup(buttons))
-    
+
   elif type=="deletecaption":
      await update_configs(user_id, 'caption', None)
      await query.message.edit_text(
         "<b>successfully updated</b>",
         reply_markup=InlineKeyboardMarkup(buttons))
-                              
+
   elif type=="addcaption":
      await query.message.delete()
      try:
@@ -307,7 +322,7 @@ async def settings_query(bot, query):
             reply_markup=InlineKeyboardMarkup(buttons))
      except asyncio.exceptions.TimeoutError:
          await text.edit_text('Process has been automatically cancelled', reply_markup=InlineKeyboardMarkup(buttons))
-  
+
   elif type=="button":
      buttons = []
      button = (await get_configs(user_id))['button']
@@ -324,7 +339,7 @@ async def settings_query(bot, query):
      await query.message.edit_text(
         "<b><u>CUSTOM BUTTON</b></u>\n\n<b>You can set a inline button to messages.</b>\n\n<b><u>FORMAT:</b></u>\n`[Forward bot][buttonurl:https://t.me/devgaganbot]`\n",
         reply_markup=InlineKeyboardMarkup(buttons))
-  
+
   elif type=="addbutton":
      await query.message.delete()
      try:
@@ -340,7 +355,7 @@ async def settings_query(bot, query):
             reply_markup=InlineKeyboardMarkup(buttons))
      except asyncio.exceptions.TimeoutError:
          await txt.edit_text('Process has been automatically cancelled', reply_markup=InlineKeyboardMarkup(buttons))
-  
+
   elif type=="seebutton":
       button = (await get_configs(user_id))['button']
       button = parse_buttons(button, markup=False)
@@ -348,13 +363,13 @@ async def settings_query(bot, query):
       await query.message.edit_text(
          "**YOUR CUSTOM BUTTON**",
          reply_markup=InlineKeyboardMarkup(button))
-      
+
   elif type=="deletebutton":
      await update_configs(user_id, 'button', None)
      await query.message.edit_text(
         "**Successfully button deleted**",
         reply_markup=InlineKeyboardMarkup(buttons))
-   
+
   elif type=="database":
      buttons = []
      db_uri = (await get_configs(user_id))['db_uri']
@@ -385,26 +400,26 @@ async def settings_query(bot, query):
      await update_configs(user_id, 'db_uri', uri.text)
      await uri.reply("**Successfully database url added**",
              reply_markup=InlineKeyboardMarkup(buttons))
-  
+
   elif type=="seeurl":
      db_uri = (await get_configs(user_id))['db_uri']
      await query.answer(f"DATABASE URL: {db_uri}", show_alert=True)
-  
+
   elif type=="deleteurl":
      await update_configs(user_id, 'db_uri', None)
      await query.message.edit_text(
         "**Successfully your database url deleted**",
         reply_markup=InlineKeyboardMarkup(buttons))
-      
+
   elif type=="filters":
      await query.message.edit_text(
         "<b><u>💠 CUSTOM FILTERS 💠</b></u>\n\n**configure the type of messages which you want forward**",
         reply_markup=await filters_buttons(user_id))
-  
+
   elif type=="nextfilters":
      await query.edit_message_reply_markup( 
         reply_markup=await next_filters_buttons(user_id))
-   
+
   elif type.startswith("updatefilter"):
      i, key, value = type.split('-')
      if value=="True":
@@ -416,7 +431,7 @@ async def settings_query(bot, query):
            reply_markup=await next_filters_buttons(user_id)) 
      await query.edit_message_reply_markup(
         reply_markup=await filters_buttons(user_id))
-   
+
   elif type.startswith("file_size"):
     settings = await get_configs(user_id)
     size = settings.get('file_size', 0)
@@ -424,7 +439,7 @@ async def settings_query(bot, query):
     await query.message.edit_text(
        f'<b><u>SIZE LIMIT</b></u><b>\n\nyou can set file size limit to forward\n\nStatus: files with {limit} `{size} MB` will forward</b>',
        reply_markup=size_button(size))
-  
+
   elif type.startswith("update_size"):
     size = int(query.data.split('-')[1])
     if 0 < size > 2000:
@@ -434,7 +449,7 @@ async def settings_query(bot, query):
     await query.message.edit_text(
        f'<b><u>SIZE LIMIT</b></u><b>\n\nyou can set file size limit to forward\n\nStatus: files with {limit} `{size} MB` will forward</b>',
        reply_markup=size_button(size))
-  
+
   elif type.startswith('update_limit'):
     i, limit, size = type.split('-')
     limit, sts = size_limit(limit)
@@ -442,7 +457,7 @@ async def settings_query(bot, query):
     await query.message.edit_text(
        f'<b><u>SIZE LIMIT</b></u><b>\n\nyou can set file size limit to forward\n\nStatus: files with {sts} `{size} MB` will forward</b>',
        reply_markup=size_button(int(size)))
-      
+
   elif type == "add_extension":
     await query.message.delete() 
     ext = await bot.ask(user_id, text="**please send your extensions (seperete by space)**")
@@ -461,7 +476,7 @@ async def settings_query(bot, query):
     await ext.reply_text(
         f"**successfully updated**",
         reply_markup=InlineKeyboardMarkup(buttons))
-      
+
   elif type == "get_extension":
     extensions = (await get_configs(user_id))['extension']
     btn = extract_btn(extensions)
@@ -471,7 +486,7 @@ async def settings_query(bot, query):
     await query.message.edit_text(
         text='<b><u>EXTENSIONS</u></b>\n\n**Files with these extiontions will not forward**',
         reply_markup=InlineKeyboardMarkup(btn))
-  
+
   elif type == "rmve_all_extension":
     await update_configs(user_id, 'extension', None)
     await query.message.edit_text(text="**successfully deleted**",
@@ -494,7 +509,7 @@ async def settings_query(bot, query):
     await ask.reply_text(
         f"**successfully updated**",
         reply_markup=InlineKeyboardMarkup(buttons))
-  
+
   elif type == "get_keyword":
     keywords = (await get_configs(user_id))['keywords']
     btn = extract_btn(keywords)
@@ -504,48 +519,45 @@ async def settings_query(bot, query):
     await query.message.edit_text(
         text='<b><u>KEYWORDS</u></b>\n\n**File with these keywords in file name will forwad**',
         reply_markup=InlineKeyboardMarkup(btn))
-      
+
   elif type == "rmve_all_keyword":
     await update_configs(user_id, 'keywords', None)
     await query.message.edit_text(text="**successfully deleted**",
                                    reply_markup=InlineKeyboardMarkup(buttons))
-  
+
   elif type=="ftmmode":
      # New FTM main menu with Delta and Alpha options
      user_can_use_ftm = await db.can_use_ftm_mode(user_id)
-     user_can_use_alpha = await db.can_use_ftm_alpha_mode(user_id)
-     
+
      buttons = []
-     
+
      if user_can_use_ftm:
          buttons.append([InlineKeyboardButton('🔥 FTM Delta Mode', callback_data='settings#ftm_delta')])
      else:
          buttons.append([InlineKeyboardButton('🔥 FTM Delta Mode (Pro Only)', callback_data='settings#ftm_delta')])
-         
-     if user_can_use_alpha:
-         buttons.append([InlineKeyboardButton('⚡ FTM Alpha Mode', callback_data='settings#ftm_alpha')])
-     else:
-         buttons.append([InlineKeyboardButton('⚡ FTM Alpha Mode (Pro Only)', callback_data='settings#ftm_alpha')])
-     
+
+     # Alpha mode is always shown as coming soon regardless of plan
+     buttons.append([InlineKeyboardButton('⚡ FTM Alpha Mode (Coming Soon!)', callback_data='settings#ftm_alpha')])
+
      buttons.append([InlineKeyboardButton('↩ Back', callback_data="settings#main")])
-     
+
      await query.message.edit_text(
         f"<b><u>🚀 FTM MODES 🚀</u></b>\n\n"
-        f"<b>🔥 FTM Delta Mode:</b>\n"
+        f"<b>🔥 FTM Delta Mode:</b> <code>Available Now</code>\n"
         f"• Adds source tracking to forwarded messages\n"
         f"• Creates 'Source Link' buttons\n"
         f"• Embeds original message links\n\n"
-        f"<b>⚡ FTM Alpha Mode:</b> 🔜\n"
-        f"• Real-time auto-forwarding between channels\n"
-        f"• Live sync of all new incoming posts\n"
-        f"• No 'Forwarded from' tags (bot-uploaded)\n"
-        f"• Requires bot admin in both channels\n\n"
-        f"<b>⚠️ Fun Fact:</b> We're launching a special Ultra plan for Alpha mode soon! 😉",
+        f"<b>⚡ FTM Alpha Mode:</b> <code>Coming in V2.0</code> 🚀\n"
+        f"• Revolutionary real-time auto-forwarding\n"
+        f"• AI-powered content filtering\n"
+        f"• Smart scheduling & analytics\n"
+        f"• Multi-channel sync technology\n\n"
+        f"<i>🎯 Click on a mode to explore features:</i>",
         reply_markup=InlineKeyboardMarkup(buttons))
-  
+
   elif type=="toggle_ftmmode":
      user_can_use_ftm = await db.can_use_ftm_mode(user_id)
-     
+
      if not user_can_use_ftm:
          buttons = [[
             InlineKeyboardButton('💎 Upgrade to Pro Plan',
@@ -572,12 +584,12 @@ async def settings_query(bot, query):
          await query.message.edit_text(
             f"<b><u>🔥 FTM MODE 🔥</u></b>\n\n<b>Status:</b> {status}\n\n<b>When FTM Mode is enabled:</b>\n• Each forwarded message will have a 'Source Link' button\n• Original message link will be added to caption\n• Target message link will be embedded in caption\n\n<b>Note:</b> This mode adds source tracking to all forwarded messages.",
             reply_markup=InlineKeyboardMarkup(buttons))
-  
+
   elif type=="ftm_delta":
      # FTM Delta Mode settings (formerly FTM mode)
      ftm_mode = (await get_configs(user_id))['ftm_mode']
      user_can_use_ftm = await db.can_use_ftm_mode(user_id)
-     
+
      if not user_can_use_ftm:
          buttons = [[
             InlineKeyboardButton('💎 Upgrade to Pro Plan',
@@ -601,11 +613,11 @@ async def settings_query(bot, query):
          await query.message.edit_text(
             f"<b><u>🔥 FTM DELTA MODE 🔥</u></b>\n\n<b>Status:</b> {status}\n\n<b>When FTM Delta Mode is enabled:</b>\n• Each forwarded message will have a 'Source Link' button\n• Original message link will be added to caption\n• Target message link will be embedded in caption\n\n<b>Note:</b> This mode adds source tracking to all forwarded messages.",
             reply_markup=InlineKeyboardMarkup(buttons))
-  
+
   elif type=="toggle_ftm_delta":
      # Toggle FTM Delta mode (same as old toggle_ftmmode)
      user_can_use_ftm = await db.can_use_ftm_mode(user_id)
-     
+
      if not user_can_use_ftm:
          buttons = [[
             InlineKeyboardButton('💎 Upgrade to Pro Plan',
@@ -637,7 +649,7 @@ async def settings_query(bot, query):
      # FTM Alpha Mode settings (new real-time forwarding)
      alpha_config = await db.get_alpha_config(user_id)
      user_can_use_alpha = await db.can_use_ftm_alpha_mode(user_id)
-     
+
      if not user_can_use_alpha:
          buttons = [[
             InlineKeyboardButton('💎 Upgrade to Pro Plan',
@@ -653,19 +665,19 @@ async def settings_query(bot, query):
          status = "🟢 Enabled" if alpha_config['enabled'] else "🔴 Disabled"
          source_info = f"📤 Source: {alpha_config['source_chat']}" if alpha_config['source_chat'] else "📤 Source: Not configured"
          target_info = f"📥 Target: {alpha_config['target_chat']}" if alpha_config['target_chat'] else "📥 Target: Not configured"
-         
+
          buttons = []
          if alpha_config['enabled']:
              buttons.append([InlineKeyboardButton('❌ Disable Alpha Mode', callback_data='settings#toggle_ftm_alpha')])
          else:
              buttons.append([InlineKeyboardButton('✅ Enable Alpha Mode', callback_data='settings#toggle_ftm_alpha')])
-             
+
          buttons.extend([
              [InlineKeyboardButton('📤 Set Source Channel', callback_data='settings#set_alpha_source')],
              [InlineKeyboardButton('📥 Set Target Channel', callback_data='settings#set_alpha_target')],
              [InlineKeyboardButton('↩ Back', callback_data="settings#ftmmode")]
          ])
-         
+
          await query.message.edit_text(
             f"<b><u>⚡ FTM ALPHA MODE ⚡</u></b>\n\n<b>Status:</b> {status}\n\n{source_info}\n{target_info}\n\n<b>When Alpha Mode is enabled:</b>\n• All new messages from source channel are auto-forwarded\n• Messages are forwarded instantly in real-time\n• No 'Forwarded from' tag (bot-uploaded)\n• Bot must be admin in both channels\n\n<b>⚠️ Note:</b> This feature requires bot admin permissions in both channels.",
             reply_markup=InlineKeyboardMarkup(buttons))
@@ -673,20 +685,20 @@ async def settings_query(bot, query):
   elif type=="toggle_ftm_alpha":
      # Toggle FTM Alpha mode
      user_can_use_alpha = await db.can_use_ftm_alpha_mode(user_id)
-     
+
      if not user_can_use_alpha:
          return await query.answer("❌ FTM Alpha Mode requires Pro plan!", show_alert=True)
-     
+
      alpha_config = await db.get_alpha_config(user_id)
      new_status = not alpha_config['enabled']
-     
+
      # Check if channels are configured before enabling
      if new_status and (not alpha_config['source_chat'] or not alpha_config['target_chat']):
          return await query.answer("❌ Please configure source and target channels first!", show_alert=True)
-     
+
      await db.set_alpha_config(user_id, enabled=new_status)
      await query.answer(f"✅ FTM Alpha Mode {'enabled' if new_status else 'disabled'}!", show_alert=True)
-     
+
      # Refresh the Alpha mode settings
      await settings_callback(None, query, "ftm_alpha")
 
@@ -695,23 +707,23 @@ async def settings_query(bot, query):
      user_can_use_alpha = await db.can_use_ftm_alpha_mode(user_id)
      if not user_can_use_alpha:
          return await query.answer("❌ FTM Alpha Mode requires Pro plan!", show_alert=True)
-         
+
      await query.answer("📤 Send the source channel username or invite link (e.g., @channel or https://t.me/channel)", show_alert=True)
      # Note: This would need additional input handling in a real implementation
-     
+
   elif type=="set_alpha_target":
      # Set Alpha mode target channel
      user_can_use_alpha = await db.can_use_ftm_alpha_mode(user_id)
      if not user_can_use_alpha:
          return await query.answer("❌ FTM Alpha Mode requires Pro plan!", show_alert=True)
-         
+
      await query.answer("📥 Send the target channel username or invite link (e.g., @channel or https://t.me/channel)", show_alert=True)
      # Note: This would need additional input handling in a real implementation
 
   elif type.startswith("alert"):
     alert = type.split('_')[1]
     await query.answer(alert, show_alert=True)
-      
+
 def main_buttons():
   buttons = [[
        InlineKeyboardButton('🤖 Bᴏᴛs',
@@ -800,7 +812,7 @@ def size_button(size):
                     callback_data="settings#main")
      ]]
   return InlineKeyboardMarkup(buttons)
-       
+
 async def filters_buttons(user_id):
   filter = await get_configs(user_id)
   filters = filter['filters']
@@ -835,7 +847,7 @@ async def filters_buttons(user_id):
        InlineKeyboardButton('✅' if filters['audio'] else '❌',
                     callback_data=f'settings#updatefilter-audio-{filters["audio"]}')
        ],[
-       InlineKeyboardButton('🎤 Voices',
+       InlineKeyboardButton('🎙️ Voices',
                     callback_data=f'settings_#updatefilter-voice-{filters["voice"]}'),
        InlineKeyboardButton('✅' if filters['voice'] else '❌',
                     callback_data=f'settings#updatefilter-voice-{filters["voice"]}')
@@ -851,7 +863,8 @@ async def filters_buttons(user_id):
                     callback_data=f'settings#updatefilter-sticker-{filters["sticker"]}')
        ],[
        InlineKeyboardButton('▶️ Skip duplicate',
-                    callback_data=f'settings_#updatefilter-duplicate-{filter["duplicate"]}'),
+                    callback_data=f'settings_#updatefilter-duplicate-{filter["duplicate"]}')
+       ],[
        InlineKeyboardButton('✅' if filter['duplicate'] else '❌',
                     callback_data=f'settings#updatefilter-duplicate-{filter["duplicate"]}')
        ],[
@@ -891,5 +904,4 @@ async def next_filters_buttons(user_id):
        InlineKeyboardButton('⫷ back', 
                     callback_data="settings#main")
        ]]
-  return InlineKeyboardMarkup(buttons) 
-   
+  return InlineKeyboardMarkup(buttons)
