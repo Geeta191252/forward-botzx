@@ -20,13 +20,6 @@ class Config:
             'url': "https://t.me/+tgPf04FXMOllMWVl",
             'display_name': 'Update Channel',
             'button_text': '🤖 Join Main Channel'
-        },
-        {
-            'username': 'ftmbotzx_support',
-            'id': int(environ.get("SUPPORT_GROUP_ID", "-1002345678901")),
-            'url': "https://t.me/ftmbotzx_support",
-            'display_name': 'Support Group',
-            'button_text': '📜 Join Support Group'
         }
         # Add more channels here as needed
         # {
@@ -48,11 +41,8 @@ class Config:
     
     # Backward compatibility
     UPDATE_CHANNEL = FORCE_SUBSCRIBE_CHANNELS[0]['url']
-    SUPPORT_GROUP = FORCE_SUBSCRIBE_CHANNELS[1]['url']
     UPDATE_CHANNEL_USERNAME = FORCE_SUBSCRIBE_CHANNELS[0]['username']
-    SUPPORT_GROUP_USERNAME = FORCE_SUBSCRIBE_CHANNELS[1]['username']
     UPDATE_CHANNEL_ID = FORCE_SUBSCRIBE_CHANNELS[0]['id']
-    SUPPORT_GROUP_ID = FORCE_SUBSCRIBE_CHANNELS[1]['id']
     
     # Three-tier pricing structure
     PLAN_PRICING = {
