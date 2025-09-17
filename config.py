@@ -10,7 +10,7 @@ class Config:
     OWNER_ID = [int(id) for id in environ.get("OWNER_ID", '7744665378').split()]
     ADMIN_ID = [int(id) for id in environ.get("ADMIN_ID", '7966880099').split() if id.strip()]
     LOG_CHANNEL_ID = int(environ.get("LOG_CHANNEL_ID", "-1003003594014"))
-    SUPPORT_GROUP = https://t.me/Movie2u_in
+    SUPPORT_GROUP = "https://t.me/Movie2u_in"
     # Multiple force subscribed channels support
     # Format: channel_username:channel_id:channel_url:display_name
     FORCE_SUBSCRIBE_CHANNELS = [
