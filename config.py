@@ -20,6 +20,13 @@ class Config:
             'url': "https://t.me/+tgPf04FXMOllMWVl",
             'display_name': 'Update Channel',
             'button_text': '🤖 Join Main Channel'
+        },
+        {
+            'username': 'ftmbotzx_support',
+            'id': int(environ.get("SUPPORT_GROUP_ID", "-1002345678901")),
+            'url': "https://t.me/ftmbotzx_support",
+            'display_name': 'Support Group',
+            'button_text': '📜 Join Support Group'
         }
         # Add more channels here as needed
         # {
