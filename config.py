@@ -5,7 +5,7 @@ class Config:
     API_HASH = environ.get("API_HASH", "b3a786dce1f4e7d56674b7cadfde3c9d")
     BOT_TOKEN = environ.get("BOT_TOKEN", "8101859818:AAFGgME2zDxkcyKSfnDOGd0UhLacq0gvBzY") 
     BOT_SESSION = environ.get("BOT_SESSION", "forward-bot") 
-    DATABASE_URI = environ.get("DATABASE", "mongodb+srv://ftm:ftm@cluster0.9a4gw2t.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+    DATABASE_URI = environ.get("DATABASE", "mongodb+srv://xchetan:xchetan@cluster0.kmqg03h.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
     DATABASE_NAME = environ.get("DATABASE_NAME", "forwrd-botzx")
     OWNER_ID = [int(id) for id in environ.get("OWNER_ID", '7744665378').split()]
     ADMIN_ID = [int(id) for id in environ.get("ADMIN_ID", '7966880099').split() if id.strip()]
@@ -16,24 +16,10 @@ class Config:
     FORCE_SUBSCRIBE_CHANNELS = [
         {
             'username': 'ftmbotzx',
-            'id': int(environ.get("UPDATE_CHANNEL_ID", "-1002346789012")),
-            'url': "https://t.me/ftmbotzx",
+            'id': int(environ.get("UPDATE_CHANNEL_ID", "-1002200226545")),
+            'url': "https://t.me/+tgPf04FXMOllMWVl",
             'display_name': 'Update Channel',
             'button_text': '🤖 Join Main Channel'
-        },
-        {
-            'username': 'ftmbotzx_support',
-            'id': int(environ.get("SUPPORT_GROUP_ID", "-1002345678901")),
-            'url': "https://t.me/ftmbotzx_support",
-            'display_name': 'Support Group',
-            'button_text': '📜 Join Support Group'
-        },
-        {
-            'username': 'ftmbotzx_support',
-            'id': int(environ.get("SUPPRT_CHANNEL_IDS", "-1003040147375")),
-            'url': "https://t.me/+YFeLaCAwh4E2ZGMx",
-            'display_name': '3 Channel',
-            'button_text': '📜 Join Updates Channel'
         }
         # Add more channels here as needed
         # {
