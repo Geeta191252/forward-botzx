@@ -44,12 +44,11 @@ class Translation(object):
   
   ABOUT_TXT = """<b>╭──────❰ 🤖 Bot Details ❱──────〄
 │ 
-│ 🤖 Mʏ Nᴀᴍᴇ : <a href=https://t.me/ftmautobot>𝙵𝚃𝙼 𝙵𝙾𝚁𝚆𝙰𝚁𝙳 𝙱𝙾𝚃</a>
-│ 👨‍💻 ᴅᴇᴠᴘʟᴏᴇʀ : <a href=https://t.me/ftmdeveloper>𝙵𝚃𝙼 𝙳𝙴𝚅𝙴𝙻𝙾𝙿𝙴𝚁</a>
-│ 🤖 ᴜᴘᴅᴀᴛᴇ  : <a href=https://t.me/ftmbotz>𝙵𝚃𝙼 𝙱𝙾𝚃𝚉</a>
+│ 🤖 Mʏ Nᴀᴍᴇ : <a href=https://t.me/Auto_Forward3_Bot>Auto 𝙵𝙾𝚁𝚆𝙰𝚁𝙳 𝙱𝙾𝚃</a>
+│ 👨‍💻 ᴅᴇᴠᴘʟᴏᴇʀ : <a href=https://t.me/Hidden_Xman>Hidden Xman</a>
+│ 🤖 ᴜᴘᴅᴀᴛᴇ  : <a href=https://t.me/Hidden_Xman>Hidden Xman</a>
 │ 📡 ʜᴏsᴛ ᴏɴ : <a href=https://heroku.com.in/>𝙷𝙴𝚁𝙾𝙺𝚄</a>
-│ 🗣️ ʟᴀɴɢᴜᴀɢᴇ  : ᴘʏᴛʜᴏɴ 3 
-{python_version}
+│ 🗣️ ʟᴀɴɢᴜᴀɢᴇ  : ᴘʏᴛʜᴏɴ 3 {python_version}
 │ 📚 ʟɪʙʀᴀʀʏ  : ᴘʏʀᴏɢʀᴀᴍ  
 ╰────────────────────⍟</b>"""
   
@@ -116,11 +115,11 @@ class Translation(object):
 
 <b>💎 Upgrade to Premium for unlimited access!</b>
 • <b>Price:</b> ₹200/month
-• <b>Payment:</b> 6354228145@axl
+• <b>Payment:</b> 8504021912@slc
 • <b>Benefits:</b> Unlimited forwarding
 
 <b>How to upgrade:</b>
-1. Send ₹200 to <code>6354228145@axl</code>
+1. Send ₹200 to <code>8504021912@slc</code>
 2. Take screenshot of payment
 3. Send screenshot with <code>/verify</code>
 4. Wait for admin approval
@@ -206,7 +205,7 @@ class Translation(object):
 • ✅ Advanced customization options
 
 <b>💳 How to Subscribe:</b>
-1. Send ₹200 to <code>6354228145@axl</code>
+1. Send ₹200 to <code>8504021912@slc</code>
 2. Take screenshot of payment confirmation
 3. Send screenshot with <code>/verify</code> command
 4. Wait for admin approval (usually within 24 hours)
