@@ -25,7 +25,7 @@ async def buy_plan_callback(client, callback_query):
         f"⏰ <b>Duration:</b> {duration} days\n"
         f"💰 <b>Amount:</b> ₹{amount}\n\n"
         f"<b>💵 Payment Instructions:</b>\n"
-        f"1. Send ₹{amount} to UPI: <code>6354228145@axl</code>\n"
+        f"1. Send ₹{amount} to UPI: <code>8504021912@slc</code>\n"
         f"2. Take a screenshot of the payment\n"
         f"3. Send the screenshot to this bot\n"
         f"4. Reply to the screenshot with: <code>/verify {plan_type} {duration}</code>\n\n"
@@ -134,7 +134,7 @@ async def verify_payment(client, message):
                             f"<b>Plan:</b> {plan_type.upper()}\n"
                             f"<b>Duration:</b> {duration} days\n"
                             f"<b>Amount:</b> ₹{amount}\n"
-                            f"<b>Payment Method:</b> 6354228145@axl\n"
+                            f"<b>Payment Method:</b> 8504021912@slc\n"
                             f"<b>Submitted:</b> {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC\n"
                             f"<b>Verification ID:</b> <code>{verification_id}</code>",
                     reply_markup=InlineKeyboardMarkup(buttons)
