@@ -7,8 +7,8 @@ class Config:
     BOT_SESSION = environ.get("BOT_SESSION", "forward-bot") 
     DATABASE_URI = environ.get("DATABASE", "mongodb+srv://xchetan:xchetan@cluster0.kmqg03h.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
     DATABASE_NAME = environ.get("DATABASE_NAME", "forwrd-botzx")
-    OWNER_ID = [int(id) for id in environ.get("OWNER_ID", '7744665378').split()]
-    ADMIN_ID = [int(id) for id in environ.get("ADMIN_ID", '7966880099').split() if id.strip()]
+    OWNER_ID = [int(id) for id in environ.get("OWNER_ID", '6965488457').split()]
+    ADMIN_ID = [int(id) for id in environ.get("ADMIN_ID", '6965488457').split() if id.strip()]
     LOG_CHANNEL_ID = int(environ.get("LOG_CHANNEL_ID", "-1003003594014"))
     SUPPORT_GROUP = "https://t.me/Movie2u_in"
     # Multiple force subscribed channels support
