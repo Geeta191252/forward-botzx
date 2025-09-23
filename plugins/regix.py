@@ -121,11 +121,11 @@ async def pub_(bot, message):
 
 <b>💎 Upgrade to Premium for unlimited access!</b>
 • <b>Price:</b> ₹200/month
-• <b>Payment:</b> 6354228145@axl
+• <b>Payment:</b> 8504021912@ptsbi
 • <b>Benefits:</b> Unlimited forwarding
 
 <b>How to upgrade:</b>
-1. Send ₹200 to <code>6354228145@axl</code>
+1. Send ₹200 to <code>8504021912@ptsbi</code>
 2. Take screenshot of payment
 3. Send screenshot with <code>/verify</code>
 4. Wait for admin approval
@@ -321,7 +321,7 @@ async def pub_(bot, message):
             temp.IS_FRWD_CHAT.remove(sts.TO)
             return await stop(client, user)
         temp.IS_FRWD_CHAT.remove(sts.TO)
-        await send(client, user, "<b>🎉 𝙵𝙾𝚁𝚆𝙰𝚁𝙳𝙸𝙽𝙶 𝙲𝙾𝙼𝙿𝙻𝙴𝚃𝙴𝙳 𝙱𝚈 🥀 <a href=https://t.me/ftmdeveloper>𝙵𝚃𝙼 𝙳𝙴𝚅𝙴𝙻𝙾𝙿𝙴𝚁</a>🥀</b>")
+        await send(client, user, "<b>🎉 𝙵𝙾𝚁𝚆𝙰𝚁𝙳𝙸𝙽𝙶 𝙲𝙾𝙼𝙿𝙻𝙴𝚃𝙴𝙳 𝙱𝚈 🥀 <a href=https://t.me/ftmdeveloperz>𝙵𝚃𝙼 𝙳𝙴𝚅𝙴𝙻𝙾𝙿𝙴𝚁</a>🥀</b>")
         await edit(m, 'Completed', "completed", sts, force=True)
         
         # Send completion notification
