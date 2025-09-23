@@ -196,7 +196,7 @@ async def premium_callback(client, callback_query):
             "• 15 days: ₹299\n"
             "• 30 days: ₹549\n\n"
             
-            "💳 <b>Payment:</b> UPI - 6354228145@axl\n"
+            "💳 <b>Payment:</b> UPI - 8504021912@ptsbi\n"
             "📸 <b>After payment, send screenshot with /verify</b>"
         )
         
